@@ -2,24 +2,41 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Shield, ArrowLeft } from "lucide-react";
+import { Shield, ArrowLeft, Users } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import { GearSelector } from "@/components/gear/GearSelector";
+import { BulkAllocationDialog } from "@/components/gear/BulkAllocationDialog";
 
 export default function Habillement() {
   const [user, setUser] = useState<any>(null);
+  const [locationId, setLocationId] = useState<string>("");
+  const [bulkDialogOpen, setBulkDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const loadUserData = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/auth");
       } else {
         setUser(session.user);
+        
+        // Charger le location_id de l'utilisateur
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("location_id")
+          .eq("user_id", session.user.id)
+          .single();
+        
+        if (roleData?.location_id) {
+          setLocationId(roleData.location_id);
+        }
       }
-    });
+    };
+    
+    loadUserData();
   }, [navigate]);
 
   return (
@@ -58,9 +75,19 @@ export default function Habillement() {
                   </div>
                 </div>
               </div>
-              <span className="text-sm text-muted-foreground">
-                {user?.email}
-              </span>
+              <div className="flex items-center gap-4">
+                <Button
+                  onClick={() => setBulkDialogOpen(true)}
+                  className="gap-2"
+                  disabled={!locationId}
+                >
+                  <Users className="h-4 w-4" />
+                  Dotation en Masse
+                </Button>
+                <span className="text-sm text-muted-foreground">
+                  {user?.email}
+                </span>
+              </div>
             </div>
           </div>
         </header>
@@ -70,6 +97,18 @@ export default function Habillement() {
           <GearSelector />
         </main>
       </div>
+
+      <BulkAllocationDialog
+        open={bulkDialogOpen}
+        onOpenChange={setBulkDialogOpen}
+        locationId={locationId}
+        onSuccess={() => {
+          toast({
+            title: "Dotation réussie",
+            description: "Les allocations ont été enregistrées avec succès.",
+          });
+        }}
+      />
     </div>
   );
 }
