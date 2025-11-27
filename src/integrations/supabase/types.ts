@@ -162,8 +162,16 @@ export type Database = {
           location_id: string
           matricule: string
           nom: string
+          notes_tailles: string | null
           photo_url: string | null
+          pointure_chaussures: string | null
           prenom: string
+          taille_beret: string | null
+          taille_casquette: string | null
+          taille_chapeau: string | null
+          taille_chaussettes: string | null
+          taille_chemise: string | null
+          taille_pantalon: string | null
           updated_at: string
         }
         Insert: {
@@ -175,8 +183,16 @@ export type Database = {
           location_id: string
           matricule: string
           nom: string
+          notes_tailles?: string | null
           photo_url?: string | null
+          pointure_chaussures?: string | null
           prenom: string
+          taille_beret?: string | null
+          taille_casquette?: string | null
+          taille_chapeau?: string | null
+          taille_chaussettes?: string | null
+          taille_chemise?: string | null
+          taille_pantalon?: string | null
           updated_at?: string
         }
         Update: {
@@ -188,8 +204,16 @@ export type Database = {
           location_id?: string
           matricule?: string
           nom?: string
+          notes_tailles?: string | null
           photo_url?: string | null
+          pointure_chaussures?: string | null
           prenom?: string
+          taille_beret?: string | null
+          taille_casquette?: string | null
+          taille_chapeau?: string | null
+          taille_chaussettes?: string | null
+          taille_chemise?: string | null
+          taille_pantalon?: string | null
           updated_at?: string
         }
         Relationships: [
