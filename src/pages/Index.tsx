@@ -110,7 +110,10 @@ export default function Index() {
             {/* Cartes des modules */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Module Habillement */}
-              <div className="glass-hover rounded-2xl p-8 neon-border-primary group cursor-pointer">
+              <div 
+                onClick={() => navigate("/habillement")}
+                className="glass-hover rounded-2xl p-8 neon-border-primary group cursor-pointer"
+              >
                 <div className="flex items-center gap-4 mb-4">
                   <div className="p-4 rounded-xl bg-primary/10 group-hover:bg-primary/20 transition-colors">
                     <Shield className="h-8 w-8 text-primary" />
@@ -142,7 +145,10 @@ export default function Index() {
               </div>
 
               {/* Module Alimentaire */}
-              <div className="glass-hover rounded-2xl p-8 neon-border-secondary group cursor-pointer">
+              <div 
+                onClick={() => navigate("/alimentaire")}
+                className="glass-hover rounded-2xl p-8 neon-border-secondary group cursor-pointer"
+              >
                 <div className="flex items-center gap-4 mb-4">
                   <div className="p-4 rounded-xl bg-secondary/10 group-hover:bg-secondary/20 transition-colors">
                     <Package className="h-8 w-8 text-secondary" />
@@ -174,7 +180,10 @@ export default function Index() {
               </div>
 
               {/* Module Personnel */}
-              <div className="glass-hover rounded-2xl p-8 border border-border/50 group cursor-pointer md:col-span-2">
+              <div 
+                onClick={() => navigate("/personnel")}
+                className="glass-hover rounded-2xl p-8 border border-border/50 group cursor-pointer md:col-span-2"
+              >
                 <div className="flex items-center gap-4 mb-4">
                   <div className="p-4 rounded-xl bg-accent/10 group-hover:bg-accent/20 transition-colors">
                     <Users className="h-8 w-8 text-accent" />
