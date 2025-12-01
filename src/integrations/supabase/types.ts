@@ -32,6 +32,7 @@ export type Database = {
           personnel_id: string
           quantite: number
           return_reason: Database["public"]["Enums"]["return_reason"] | null
+          signature_proof: string | null
           transaction_type:
             | Database["public"]["Enums"]["transaction_type"]
             | null
@@ -53,6 +54,7 @@ export type Database = {
           personnel_id: string
           quantite?: number
           return_reason?: Database["public"]["Enums"]["return_reason"] | null
+          signature_proof?: string | null
           transaction_type?:
             | Database["public"]["Enums"]["transaction_type"]
             | null
@@ -74,6 +76,7 @@ export type Database = {
           personnel_id?: string
           quantite?: number
           return_reason?: Database["public"]["Enums"]["return_reason"] | null
+          signature_proof?: string | null
           transaction_type?:
             | Database["public"]["Enums"]["transaction_type"]
             | null
@@ -115,6 +118,7 @@ export type Database = {
           item_variant_id: string
           location_id: string
           original_quantity: number
+          qr_code: string | null
           quantity: number
           supplier_id: string | null
           supplier_name: string | null
@@ -134,6 +138,7 @@ export type Database = {
           item_variant_id: string
           location_id: string
           original_quantity: number
+          qr_code?: string | null
           quantity?: number
           supplier_id?: string | null
           supplier_name?: string | null
@@ -153,6 +158,7 @@ export type Database = {
           item_variant_id?: string
           location_id?: string
           original_quantity?: number
+          qr_code?: string | null
           quantity?: number
           supplier_id?: string | null
           supplier_name?: string | null
@@ -174,6 +180,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "locations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "inventory_batches_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "view_camp_consumption_rate"
+            referencedColumns: ["location_id"]
           },
         ]
       }
@@ -251,6 +264,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "item_variants_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "view_camp_consumption_rate"
+            referencedColumns: ["location_id"]
+          },
+          {
             foreignKeyName: "item_variants_stock_item_id_fkey"
             columns: ["stock_item_id"]
             isOneToOne: false
@@ -303,6 +323,7 @@ export type Database = {
           photo_url: string | null
           pointure_chaussures: string | null
           prenom: string
+          qr_code: string | null
           sexe: Database["public"]["Enums"]["gender_type"] | null
           taille_beret: string | null
           taille_casquette: string | null
@@ -325,6 +346,7 @@ export type Database = {
           photo_url?: string | null
           pointure_chaussures?: string | null
           prenom: string
+          qr_code?: string | null
           sexe?: Database["public"]["Enums"]["gender_type"] | null
           taille_beret?: string | null
           taille_casquette?: string | null
@@ -347,6 +369,7 @@ export type Database = {
           photo_url?: string | null
           pointure_chaussures?: string | null
           prenom?: string
+          qr_code?: string | null
           sexe?: Database["public"]["Enums"]["gender_type"] | null
           taille_beret?: string | null
           taille_casquette?: string | null
@@ -363,6 +386,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "locations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "personnel_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "view_camp_consumption_rate"
+            referencedColumns: ["location_id"]
           },
         ]
       }
@@ -496,11 +526,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "procurement_orders_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "view_camp_consumption_rate"
+            referencedColumns: ["location_id"]
+          },
+          {
             foreignKeyName: "procurement_orders_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "suppliers"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "view_supplier_performance"
+            referencedColumns: ["supplier_id"]
           },
         ]
       }
@@ -581,6 +625,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "locations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "requests_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "view_camp_consumption_rate"
+            referencedColumns: ["location_id"]
           },
           {
             foreignKeyName: "requests_stock_item_id_fkey"
@@ -678,6 +729,51 @@ export type Database = {
         }
         Relationships: []
       }
+      suspicious_activities: {
+        Row: {
+          activity_type: string
+          description: string
+          detected_at: string | null
+          id: string
+          metadata: Json | null
+          notes: string | null
+          related_id: string | null
+          related_table: string
+          reviewed: boolean | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          severity: string
+        }
+        Insert: {
+          activity_type: string
+          description: string
+          detected_at?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          related_id?: string | null
+          related_table: string
+          reviewed?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity: string
+        }
+        Update: {
+          activity_type?: string
+          description?: string
+          detected_at?: string | null
+          id?: string
+          metadata?: Json | null
+          notes?: string | null
+          related_id?: string | null
+          related_table?: string
+          reviewed?: boolean | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          severity?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -708,11 +804,48 @@ export type Database = {
             referencedRelation: "locations"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_user_roles_location"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "view_camp_consumption_rate"
+            referencedColumns: ["location_id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      view_camp_consumption_rate: {
+        Row: {
+          avg_daily_consumption: number | null
+          camp_name: string | null
+          days_with_distribution: number | null
+          food_category: string | null
+          food_subtype: string | null
+          location_id: string | null
+          max_daily_consumption: number | null
+          min_daily_consumption: number | null
+          total_quantity_90_days: number | null
+        }
+        Relationships: []
+      }
+      view_supplier_performance: {
+        Row: {
+          avg_delivery_days: number | null
+          completed_orders: number | null
+          country: string | null
+          current_rating: Database["public"]["Enums"]["supplier_rating"] | null
+          is_active: boolean | null
+          late_deliveries: number | null
+          on_time_delivery_rate: number | null
+          supplier_code: string | null
+          supplier_id: string | null
+          supplier_name: string | null
+          total_order_value: number | null
+          total_orders: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       distribute_food_fifo: {
@@ -722,6 +855,20 @@ export type Database = {
           p_location_id: string
         }
         Returns: Json
+      }
+      get_camp_consumption_rate: {
+        Args: { p_location_id?: string }
+        Returns: {
+          avg_daily_consumption: number
+          camp_name: string
+          days_with_distribution: number
+          food_category: string
+          food_subtype: string
+          location_id: string
+          max_daily_consumption: number
+          min_daily_consumption: number
+          total_quantity_90_days: number
+        }[]
       }
       get_expiring_batches: {
         Args: { days_ahead?: number }
@@ -745,6 +892,23 @@ export type Database = {
           item_type: string
           personnel_nom: string
           personnel_prenom: string
+        }[]
+      }
+      get_supplier_performance: {
+        Args: { p_supplier_id?: string }
+        Returns: {
+          avg_delivery_days: number
+          completed_orders: number
+          country: string
+          current_rating: Database["public"]["Enums"]["supplier_rating"]
+          is_active: boolean
+          late_deliveries: number
+          on_time_delivery_rate: number
+          supplier_code: string
+          supplier_id: string
+          supplier_name: string
+          total_order_value: number
+          total_orders: number
         }[]
       }
       get_user_location: { Args: { _user_id: string }; Returns: string }
