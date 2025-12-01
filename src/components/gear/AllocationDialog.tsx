@@ -137,20 +137,27 @@ export function AllocationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass border border-border/50 max-w-md">
+      <DialogContent className="glass border border-primary/20 max-w-md shadow-[0_0_30px_rgba(var(--primary),0.15)]">
         <DialogHeader>
-          <DialogTitle className="neon-text-primary">
+          <DialogTitle className="neon-text-primary text-xl flex items-center gap-2">
+            <span className="inline-block w-2 h-2 bg-primary rounded-full animate-pulse"></span>
             Confirmer la dotation
           </DialogTitle>
-          <DialogDescription>
-            Attribution de {itemName} à {personnel.prenom} {personnel.nom} (
-            {personnel.matricule})
+          <DialogDescription className="text-base">
+            Attribution de <span className="text-primary font-medium">{itemName}</span> à{" "}
+            <span className="text-foreground font-medium">
+              {personnel.prenom} {personnel.nom}
+            </span>{" "}
+            <span className="text-muted-foreground">({personnel.matricule})</span>
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="quantite">Quantité</Label>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="space-y-2 p-4 glass rounded-lg border border-primary/10">
+            <Label htmlFor="quantite" className="text-sm font-medium flex items-center gap-2">
+              Quantité
+              <span className="text-xs text-muted-foreground">(obligatoire)</span>
+            </Label>
             <Input
               id="quantite"
               type="number"
@@ -158,15 +165,23 @@ export function AllocationDialog({
               max={variant.quantite}
               value={quantite}
               onChange={(e) => setQuantite(parseInt(e.target.value) || 1)}
-              className="glass border-border/50"
+              className="glass border-border/50 text-lg font-semibold"
             />
-            <p className="text-xs text-muted-foreground">
-              Stock disponible: {variant.quantite}
-            </p>
+            <div className="flex items-center justify-between text-xs">
+              <span className="text-muted-foreground">Stock disponible:</span>
+              <span className={`font-medium ${
+                variant.quantite <= 5 ? "text-amber-500" : "text-emerald-500"
+              }`}>
+                {variant.quantite} unité{variant.quantite > 1 ? "s" : ""}
+              </span>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="motif">Motif *</Label>
+          <div className="space-y-2 p-4 glass rounded-lg border border-primary/10">
+            <Label htmlFor="motif" className="text-sm font-medium flex items-center gap-2">
+              Motif
+              <span className="text-destructive">*</span>
+            </Label>
             <Select value={motif} onValueChange={setMotif}>
               <SelectTrigger className="glass border-border/50 bg-card/80">
                 <SelectValue placeholder="Sélectionnez un motif" />
@@ -179,15 +194,21 @@ export function AllocationDialog({
                 ))}
               </SelectContent>
             </Select>
+            <p className="text-xs text-muted-foreground">
+              Le motif est obligatoire pour la traçabilité
+            </p>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optionnel)</Label>
+            <Label htmlFor="notes" className="text-sm font-medium flex items-center gap-2">
+              Notes
+              <span className="text-xs text-muted-foreground">(optionnel)</span>
+            </Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Ajoutez des notes supplémentaires..."
+              placeholder="Exemple: Taille ajustée, remplacement suite à dommage..."
               className="glass border-border/50 min-h-[80px]"
             />
           </div>
