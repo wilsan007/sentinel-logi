@@ -3,21 +3,34 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Loader2, Shield, Package, Users, LogOut } from "lucide-react";
+import { Loader2, Shield, Package, Users, LogOut, ShoppingCart, Clock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 
 export default function Index() {
   const [user, setUser] = useState<User | null>(null);
+  const [locationId, setLocationId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
 
   useEffect(() => {
     // Vérifier la session au chargement
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (!session) {
         navigate("/auth");
+      } else {
+        // Charger le location_id de l'utilisateur
+        const { data: roleData } = await supabase
+          .from("user_roles")
+          .select("location_id")
+          .eq("user_id", session.user.id)
+          .single();
+        
+        if (roleData?.location_id) {
+          setLocationId(roleData.location_id);
+        }
       }
       setLoading(false);
     });
@@ -97,7 +110,7 @@ export default function Index() {
 
         {/* Contenu principal */}
         <main className="container mx-auto px-4 py-12">
-          <div className="max-w-6xl mx-auto">
+          <div className="max-w-7xl mx-auto">
             <div className="text-center mb-12">
               <h2 className="text-4xl font-bold mb-4">
                 Bienvenue sur <span className="neon-text-primary">Sentinel</span>
@@ -107,8 +120,13 @@ export default function Index() {
               </p>
             </div>
 
+            {/* Widgets Dashboard */}
+            <div className="mb-12">
+              <DashboardWidgets locationId={locationId} />
+            </div>
+
             {/* Cartes des modules */}
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
               {/* Module Habillement */}
               <div 
                 onClick={() => navigate("/habillement")}
@@ -182,7 +200,7 @@ export default function Index() {
               {/* Module Personnel */}
               <div 
                 onClick={() => navigate("/personnel")}
-                className="glass-hover rounded-2xl p-8 border border-border/50 group cursor-pointer md:col-span-2"
+                className="glass-hover rounded-2xl p-8 border border-border/50 group cursor-pointer"
               >
                 <div className="flex items-center gap-4 mb-4">
                   <div className="p-4 rounded-xl bg-accent/10 group-hover:bg-accent/20 transition-colors">
@@ -197,10 +215,85 @@ export default function Index() {
                     </p>
                   </div>
                 </div>
-                <p className="text-muted-foreground">
-                  Gérez le personnel militaire : grades, matricules, affectations aux camps,
-                  et consultez l'historique complet des dotations par individu.
+                <p className="text-muted-foreground mb-6">
+                  Gérez le personnel militaire : grades, matricules, affectations aux camps.
                 </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 rounded-full bg-accent/10 text-accent text-xs">
+                    Effectifs
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-accent/10 text-accent text-xs">
+                    Grades
+                  </span>
+                </div>
+              </div>
+
+              {/* Module Procurement */}
+              <div 
+                onClick={() => navigate("/procurement")}
+                className="glass-hover rounded-2xl p-8 border border-emerald-500/30 group cursor-pointer"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-4 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
+                    <ShoppingCart className="h-8 w-8 text-emerald-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-emerald-500">
+                      Procurement
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Commandes fournisseurs
+                    </p>
+                  </div>
+                </div>
+                <p className="text-muted-foreground mb-6">
+                  Gérez le processus d'approvisionnement de bout en bout avec suivi des fournisseurs.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs">
+                    Commandes
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs">
+                    Fournisseurs
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs">
+                    Suivi
+                  </span>
+                </div>
+              </div>
+
+              {/* Module Loans */}
+              <div 
+                onClick={() => navigate("/loans")}
+                className="glass-hover rounded-2xl p-8 border border-violet-500/30 group cursor-pointer"
+              >
+                <div className="flex items-center gap-4 mb-4">
+                  <div className="p-4 rounded-xl bg-violet-500/10 group-hover:bg-violet-500/20 transition-colors">
+                    <Clock className="h-8 w-8 text-violet-500" />
+                  </div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-violet-500">
+                      Prêts
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      Gestion des équipements temporaires
+                    </p>
+                  </div>
+                </div>
+                <p className="text-muted-foreground mb-6">
+                  Suivez les prêts d'équipements avec dates de retour et alertes automatiques.
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <span className="px-3 py-1 rounded-full bg-violet-500/10 text-violet-500 text-xs">
+                    Prêts actifs
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-violet-500/10 text-violet-500 text-xs">
+                    Retours
+                  </span>
+                  <span className="px-3 py-1 rounded-full bg-violet-500/10 text-violet-500 text-xs">
+                    Alertes
+                  </span>
+                </div>
               </div>
             </div>
           </div>
