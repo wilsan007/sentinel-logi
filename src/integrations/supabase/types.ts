@@ -848,6 +848,7 @@ export type Database = {
       }
     }
     Functions: {
+      assign_test_user_roles: { Args: never; Returns: undefined }
       distribute_food_fifo: {
         Args: {
           p_amount_needed: number
