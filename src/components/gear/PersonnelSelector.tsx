@@ -12,6 +12,7 @@ type Personnel = {
   matricule: string;
   grade: string;
   photo_url: string | null;
+  sexe?: string;
 };
 
 type PersonnelSelectorProps = {
@@ -131,7 +132,7 @@ export function PersonnelSelector({ onSelect }: PersonnelSelectorProps) {
                   <h3 className="font-bold">
                     {person.prenom} {person.nom}
                   </h3>
-                  <div className="flex items-center gap-2 text-sm">
+                  <div className="flex items-center gap-2 text-sm flex-wrap">
                     <span className="text-muted-foreground font-mono">
                       {person.matricule}
                     </span>
@@ -139,6 +140,14 @@ export function PersonnelSelector({ onSelect }: PersonnelSelectorProps) {
                     <span className="px-2 py-0.5 rounded-full bg-accent/20 text-accent text-xs">
                       {person.grade}
                     </span>
+                    {person.sexe && (
+                      <>
+                        <span className="text-muted-foreground">•</span>
+                        <span className="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-xs capitalize">
+                          {person.sexe}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
