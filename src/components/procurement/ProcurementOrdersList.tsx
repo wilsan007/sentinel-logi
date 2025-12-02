@@ -3,13 +3,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Eye, Edit } from "lucide-react";
+import { Eye, Edit, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { OrderDetailDialog } from "./OrderDetailDialog";
 
 interface ProcurementOrdersListProps {
   locationId: string;
   refreshKey: number;
+  onRefresh: () => void;
 }
 
 const STAGE_LABELS: Record<string, string> = {
@@ -34,9 +37,12 @@ const STAGE_COLORS: Record<string, string> = {
   CANCELLED: "bg-red-500/20 text-red-500"
 };
 
-export const ProcurementOrdersList = ({ locationId, refreshKey }: ProcurementOrdersListProps) => {
+export const ProcurementOrdersList = ({ locationId, refreshKey, onRefresh }: ProcurementOrdersListProps) => {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   useEffect(() => {
     if (locationId) {
@@ -69,6 +75,17 @@ export const ProcurementOrdersList = ({ locationId, refreshKey }: ProcurementOrd
     return <div className="text-center py-12">Chargement...</div>;
   }
 
+  const filteredOrders = orders.filter(
+    (order) =>
+      order.order_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (order.suppliers?.name && order.suppliers.name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  const handleOpenDetail = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    setDetailDialogOpen(true);
+  };
+
   if (orders.length === 0) {
     return (
       <Card className="glass border-border/50">
@@ -81,9 +98,20 @@ export const ProcurementOrdersList = ({ locationId, refreshKey }: ProcurementOrd
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold">Commandes Fournisseurs</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-2xl font-bold">Commandes Fournisseurs</h2>
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Rechercher..."
+            className="pl-10 glass border-border/50"
+          />
+        </div>
+      </div>
       <div className="grid gap-4">
-        {orders.map((order) => (
+        {filteredOrders.map((order) => (
           <Card key={order.id} className="glass border-border/50 hover:border-emerald-500/30 transition-colors">
             <CardHeader>
               <div className="flex items-start justify-between">
@@ -101,10 +129,10 @@ export const ProcurementOrdersList = ({ locationId, refreshKey }: ProcurementOrd
                   )}
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="ghost">
+                  <Button size="sm" variant="ghost" onClick={() => handleOpenDetail(order.id)}>
                     <Eye className="h-4 w-4" />
                   </Button>
-                  <Button size="sm" variant="ghost">
+                  <Button size="sm" variant="ghost" onClick={() => handleOpenDetail(order.id)}>
                     <Edit className="h-4 w-4" />
                   </Button>
                 </div>
@@ -139,6 +167,16 @@ export const ProcurementOrdersList = ({ locationId, refreshKey }: ProcurementOrd
           </Card>
         ))}
       </div>
+
+      <OrderDetailDialog
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        orderId={selectedOrderId}
+        onSuccess={() => {
+          onRefresh();
+          loadOrders();
+        }}
+      />
     </div>
   );
 };
