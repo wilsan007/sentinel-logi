@@ -2,15 +2,17 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, ArrowLeft, Plus } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Plus, Wand2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ProcurementOrdersList } from "@/components/procurement/ProcurementOrdersList";
 import { CreateOrderDialog } from "@/components/procurement/CreateOrderDialog";
+import { SmartPurchaseWizard } from "@/components/procurement/SmartPurchaseWizard";
 
 export default function Procurement() {
   const [user, setUser] = useState<any>(null);
   const [locationId, setLocationId] = useState<string>("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [smartWizardOpen, setSmartWizardOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -76,12 +78,21 @@ export default function Procurement() {
               </div>
               <div className="flex items-center gap-4">
                 <Button
+                  onClick={() => setSmartWizardOpen(true)}
+                  className="gap-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-500 border border-emerald-500/30"
+                  disabled={!locationId}
+                >
+                  <Wand2 className="h-4 w-4" />
+                  Smart Purchase
+                </Button>
+                <Button
                   onClick={() => setCreateDialogOpen(true)}
-                  className="gap-2 bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-500 border border-emerald-500/30"
+                  variant="outline"
+                  className="gap-2 glass border-border/50"
                   disabled={!locationId}
                 >
                   <Plus className="h-4 w-4" />
-                  Nouvelle Commande
+                  Commande Manuelle
                 </Button>
                 <span className="text-sm text-muted-foreground">
                   {user?.email}
@@ -96,6 +107,7 @@ export default function Procurement() {
           <ProcurementOrdersList 
             locationId={locationId} 
             refreshKey={refreshKey}
+            onRefresh={() => setRefreshKey(prev => prev + 1)}
           />
         </main>
       </div>
@@ -109,6 +121,15 @@ export default function Procurement() {
             title: "Commande créée",
             description: "La commande a été enregistrée avec succès.",
           });
+          setRefreshKey(prev => prev + 1);
+        }}
+      />
+
+      <SmartPurchaseWizard
+        open={smartWizardOpen}
+        onOpenChange={setSmartWizardOpen}
+        locationId={locationId}
+        onSuccess={() => {
           setRefreshKey(prev => prev + 1);
         }}
       />
