@@ -29,7 +29,7 @@ export default function Procurement() {
           .from("user_roles")
           .select("location_id")
           .eq("user_id", session.user.id)
-          .single();
+          .maybeSingle();
         
         if (roleData?.location_id) {
           setLocationId(roleData.location_id);
