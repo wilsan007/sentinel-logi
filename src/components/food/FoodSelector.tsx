@@ -106,8 +106,15 @@ type CartItem = {
 interface FoodSelectorProps {
   locationId: string;
   mode: "stock" | "distribute";
+  isStockCentral?: boolean;
   onSuccess?: () => void;
 }
+
+type CampLocation = {
+  id: string;
+  nom: string;
+  code: string;
+};
 
 const UNIT_LABELS: Record<string, string> = {
   kg: "Kilogrammes",
@@ -134,9 +141,13 @@ const CATEGORY_COLORS: Record<string, string> = {
   "Boissons": "text-cyan-400",
 };
 
-export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps) {
+export function FoodSelector({ locationId, mode, isStockCentral = false, onSuccess }: FoodSelectorProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [categories, setCategories] = useState<FoodCategory[]>([]);
+  
+  // Camps for Stock Central distribution
+  const [camps, setCamps] = useState<CampLocation[]>([]);
+  const [selectedDestinationCamp, setSelectedDestinationCamp] = useState<string>("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [itemStocks, setItemStocks] = useState<Record<string, number>>({});
@@ -185,7 +196,10 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
   useEffect(() => {
     loadCategories();
     loadSuppliers();
-  }, []);
+    if (isStockCentral && mode === "distribute") {
+      loadCamps();
+    }
+  }, [isStockCentral, mode]);
 
   const loadSuppliers = async () => {
     const { data, error } = await supabase
@@ -196,6 +210,19 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
 
     if (!error && data) {
       setSuppliers(data);
+    }
+  };
+
+  const loadCamps = async () => {
+    // Load all camps except Stock Central for distribution
+    const { data, error } = await supabase
+      .from("locations")
+      .select("id, nom, code")
+      .neq("code", "SC-000")
+      .order("nom");
+
+    if (!error && data) {
+      setCamps(data);
     }
   };
 
@@ -477,9 +504,16 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
 
   const handleDistribute = async () => {
     if (!selectedVariant || distributeAmount <= 0) return;
+    
+    // If Stock Central, we need a destination camp
+    if (isStockCentral && !selectedDestinationCamp) {
+      toast({ title: "Erreur", description: "Veuillez sélectionner un camp destinataire", variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
 
+    // Deduct from Stock Central using FIFO
     const { data, error } = await supabase.rpc('distribute_food_fifo', {
       p_item_variant_id: selectedVariant.id,
       p_location_id: locationId,
@@ -492,12 +526,87 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
       return;
     }
 
-    toast({
-      title: "Distribution effectuée",
-      description: `${distributeAmount} ${UNIT_LABELS[selectedVariant?.type_unite || "unite"]} distribués (FIFO)`
-    });
+    // If Stock Central, add stock to destination camp
+    if (isStockCentral && selectedDestinationCamp) {
+      // Get or create variant in destination camp
+      const { data: destVariant } = await supabase
+        .from("item_variants")
+        .select("*")
+        .eq("stock_item_id", selectedItem?.id)
+        .eq("location_id", selectedDestinationCamp)
+        .maybeSingle();
+
+      let destVariantId: string;
+      let currentDestQty = 0;
+
+      if (destVariant) {
+        destVariantId = destVariant.id;
+        currentDestQty = destVariant.quantite;
+      } else {
+        // Create new variant in destination camp
+        if (!selectedItem?.id) {
+          toast({ title: "Erreur", description: "Produit non sélectionné", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+        
+        const { data: newVariant, error: createError } = await supabase
+          .from("item_variants")
+          .insert([{
+            stock_item_id: selectedItem.id,
+            location_id: selectedDestinationCamp,
+            quantite: 0,
+            seuil_alerte: selectedVariant.seuil_alerte,
+            type_unite: selectedVariant.type_unite as "kg" | "litre" | "boite" | "unite" | null
+          }])
+          .select()
+          .single();
+
+        if (createError || !newVariant) {
+          toast({ title: "Erreur", description: "Impossible de créer le stock au camp destinataire", variant: "destructive" });
+          setLoading(false);
+          return;
+        }
+        destVariantId = newVariant.id;
+      }
+
+      // Create batch in destination camp
+      const batchNumber = `TRANSFER-${Date.now().toString(36).toUpperCase()}`;
+      const { error: batchError } = await supabase
+        .from("inventory_batches")
+        .insert({
+          batch_number: batchNumber,
+          item_variant_id: destVariantId,
+          location_id: selectedDestinationCamp,
+          quantity: distributeAmount,
+          original_quantity: distributeAmount,
+          supplier_name: "Stock Central"
+        });
+
+      if (batchError) {
+        toast({ title: "Avertissement", description: "Stock déduit mais erreur lors de l'ajout au camp", variant: "destructive" });
+      }
+
+      // Update destination variant quantity
+      await supabase
+        .from("item_variants")
+        .update({ quantite: currentDestQty + distributeAmount })
+        .eq("id", destVariantId);
+
+      const campName = camps.find(c => c.id === selectedDestinationCamp)?.nom || "Camp";
+      toast({
+        title: "Redistribution effectuée",
+        description: `${distributeAmount} ${UNIT_LABELS[selectedVariant?.type_unite || "unite"]} transférés vers ${campName}`
+      });
+    } else {
+      toast({
+        title: "Distribution effectuée",
+        description: `${distributeAmount} ${UNIT_LABELS[selectedVariant?.type_unite || "unite"]} distribués (FIFO)`
+      });
+    }
 
     setDistributeDialogOpen(false);
+    setSelectedDestinationCamp("");
     handleReset();
     onSuccess?.();
     setLoading(false);
@@ -513,6 +622,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
     setBatches([]);
     setDistributeAmount(1);
     setActivePopover(null);
+    setSelectedDestinationCamp("");
   };
 
   const handleBack = () => {
@@ -1014,14 +1124,38 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
       <Dialog open={distributeDialogOpen} onOpenChange={setDistributeDialogOpen}>
         <DialogContent className="glass">
           <DialogHeader>
-            <DialogTitle className="neon-text-secondary">Distribuer</DialogTitle>
+            <DialogTitle className="neon-text-secondary">
+              {isStockCentral ? "Redistribuer vers un camp" : "Distribuer"}
+            </DialogTitle>
             <DialogDescription>
               {selectedItem?.sous_type || selectedItem?.type} - Stock disponible: {totalBatchQuantity} {UNIT_LABELS[selectedVariant?.type_unite || "unite"]}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            {/* Camp selector for Stock Central */}
+            {isStockCentral && (
+              <div className="space-y-2">
+                <Label>Camp destinataire</Label>
+                <Select
+                  value={selectedDestinationCamp}
+                  onValueChange={setSelectedDestinationCamp}
+                >
+                  <SelectTrigger className="glass">
+                    <SelectValue placeholder="Sélectionner un camp" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-background border border-border z-50">
+                    {camps.map((camp) => (
+                      <SelectItem key={camp.id} value={camp.id}>
+                        {camp.nom} ({camp.code})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            
             <div className="space-y-2">
-              <Label>Quantité à distribuer ({UNIT_LABELS[selectedVariant?.type_unite || "unite"]})</Label>
+              <Label>Quantité à {isStockCentral ? "transférer" : "distribuer"} ({UNIT_LABELS[selectedVariant?.type_unite || "unite"]})</Label>
               <Input
                 type="number"
                 min={1}
@@ -1036,11 +1170,11 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
             <Button variant="ghost" onClick={() => setDistributeDialogOpen(false)}>Annuler</Button>
             <Button 
               onClick={handleDistribute} 
-              disabled={loading || distributeAmount <= 0 || distributeAmount > totalBatchQuantity}
+              disabled={loading || distributeAmount <= 0 || distributeAmount > totalBatchQuantity || (isStockCentral && !selectedDestinationCamp)}
               className="bg-secondary hover:bg-secondary/90"
             >
               <Minus className="h-4 w-4 mr-2" />
-              Distribuer
+              {isStockCentral ? "Transférer" : "Distribuer"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -15,10 +15,12 @@ import {
 
 type ViewMode = "stock" | "distribute";
 
+const STOCK_CENTRAL_CODE = "SC-000";
+
 export default function Alimentaire() {
   const [user, setUser] = useState<any>(null);
   const [locationId, setLocationId] = useState<string>("");
-  const [locations, setLocations] = useState<{ id: string; nom: string }[]>([]);
+  const [locations, setLocations] = useState<{ id: string; nom: string; code: string }[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
   const [mode, setMode] = useState<ViewMode>("stock");
   const navigate = useNavigate();
@@ -42,10 +44,12 @@ export default function Alimentaire() {
       if (roleData?.role === "admin_central") {
         setIsAdmin(true);
         // Load all locations for admin to choose
-        const { data: locs } = await supabase.from("locations").select("id, nom").order("nom");
+        const { data: locs } = await supabase.from("locations").select("id, nom, code").order("nom");
         if (locs && locs.length > 0) {
           setLocations(locs);
-          setLocationId(locs[0].id); // Default to first location
+          // Default to Stock Central if it exists
+          const stockCentral = locs.find(l => l.code === STOCK_CENTRAL_CODE);
+          setLocationId(stockCentral ? stockCentral.id : locs[0].id);
         }
       } else if (roleData?.location_id) {
         setLocationId(roleData.location_id);
@@ -98,18 +102,34 @@ export default function Alimentaire() {
         </header>
 
         <div className="container mx-auto px-4 py-6">
+          {/* Show current location info */}
+          {locationId && (
+            <div className="mb-4">
+              {locations.find(l => l.id === locationId)?.code === STOCK_CENTRAL_CODE && (
+                <div className="inline-flex items-center gap-2 px-3 py-1 bg-secondary/20 border border-secondary/30 rounded-lg text-sm text-secondary">
+                  <Package className="h-4 w-4" />
+                  Stock Central - Point d'approvisionnement principal
+                </div>
+              )}
+            </div>
+          )}
+          
           <div className="flex gap-3 p-1 glass rounded-xl w-fit mb-6">
             <Button onClick={() => setMode("stock")} className={mode === "stock" ? "bg-secondary text-secondary-foreground" : "bg-transparent text-muted-foreground hover:text-foreground"}>
               Ajouter Stock
             </Button>
             <Button onClick={() => setMode("distribute")} className={mode === "distribute" ? "bg-secondary text-secondary-foreground" : "bg-transparent text-muted-foreground hover:text-foreground"}>
-              Distribuer
+              {locations.find(l => l.id === locationId)?.code === STOCK_CENTRAL_CODE ? "Redistribuer" : "Distribuer"}
             </Button>
           </div>
 
           <motion.div key={`${mode}-${locationId}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
             {locationId ? (
-              <FoodSelector locationId={locationId} mode={mode} />
+              <FoodSelector 
+                locationId={locationId} 
+                mode={mode} 
+                isStockCentral={locations.find(l => l.id === locationId)?.code === STOCK_CENTRAL_CODE}
+              />
             ) : (
               <div className="glass p-12 text-center rounded-xl">
                 <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
