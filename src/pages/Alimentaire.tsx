@@ -5,12 +5,21 @@ import { Button } from "@/components/ui/button";
 import { Package, ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import { FoodSelector } from "@/components/food/FoodSelector";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 type ViewMode = "stock" | "distribute";
 
 export default function Alimentaire() {
   const [user, setUser] = useState<any>(null);
   const [locationId, setLocationId] = useState<string>("");
+  const [locations, setLocations] = useState<{ id: string; nom: string }[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [mode, setMode] = useState<ViewMode>("stock");
   const navigate = useNavigate();
 
@@ -19,14 +28,27 @@ export default function Alimentaire() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/auth");
-      } else {
-        setUser(session.user);
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("location_id")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-        if (roleData?.location_id) setLocationId(roleData.location_id);
+        return;
+      }
+      
+      setUser(session.user);
+      
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("location_id, role")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      
+      if (roleData?.role === "admin_central") {
+        setIsAdmin(true);
+        // Load all locations for admin to choose
+        const { data: locs } = await supabase.from("locations").select("id, nom").order("nom");
+        if (locs && locs.length > 0) {
+          setLocations(locs);
+          setLocationId(locs[0].id); // Default to first location
+        }
+      } else if (roleData?.location_id) {
+        setLocationId(roleData.location_id);
       }
     };
     loadUserData();
@@ -56,7 +78,21 @@ export default function Alimentaire() {
                   </div>
                 </div>
               </div>
-              <span className="text-sm text-muted-foreground">{user?.email}</span>
+              <div className="flex items-center gap-4">
+                {isAdmin && locations.length > 0 && (
+                  <Select value={locationId} onValueChange={setLocationId}>
+                    <SelectTrigger className="w-[200px] glass">
+                      <SelectValue placeholder="Sélectionner un camp" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map(loc => (
+                        <SelectItem key={loc.id} value={loc.id}>{loc.nom}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <span className="text-sm text-muted-foreground">{user?.email}</span>
+              </div>
             </div>
           </div>
         </header>
@@ -71,8 +107,15 @@ export default function Alimentaire() {
             </Button>
           </div>
 
-          <motion.div key={mode} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
-            {locationId && <FoodSelector locationId={locationId} mode={mode} />}
+          <motion.div key={`${mode}-${locationId}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.3 }}>
+            {locationId ? (
+              <FoodSelector locationId={locationId} mode={mode} />
+            ) : (
+              <div className="glass p-12 text-center rounded-xl">
+                <Package className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">Veuillez sélectionner un camp pour continuer</p>
+              </div>
+            )}
           </motion.div>
         </div>
       </div>
