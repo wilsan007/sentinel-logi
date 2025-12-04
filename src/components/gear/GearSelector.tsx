@@ -153,7 +153,33 @@ export function GearSelector() {
       return;
     }
 
-    setItems(data || []);
+    // Filtrer les articles selon le sexe du personnel
+    let filteredItems = data || [];
+    
+    if (selectedPersonnel?.sexe) {
+      // Articles réservés aux femmes (jupes, escarpins, etc.)
+      const femaleOnlyKeywords = ['jupe', 'escarpin', 'culotte femme'];
+      // Articles réservés aux hommes (caleçon, etc.)
+      const maleOnlyKeywords = ['caleçon', 'calecon'];
+      
+      filteredItems = filteredItems.filter(item => {
+        const itemName = `${item.type} ${item.sous_type || ''}`.toLowerCase();
+        
+        // Si personnel masculin, exclure les articles féminins
+        if (selectedPersonnel.sexe === 'homme') {
+          return !femaleOnlyKeywords.some(keyword => itemName.includes(keyword));
+        }
+        
+        // Si personnel féminin, exclure les articles masculins
+        if (selectedPersonnel.sexe === 'femme') {
+          return !maleOnlyKeywords.some(keyword => itemName.includes(keyword));
+        }
+        
+        return true;
+      });
+    }
+
+    setItems(filteredItems);
     setCurrentStep("item");
   };
 
