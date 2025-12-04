@@ -651,6 +651,7 @@ export type Database = {
           image_url: string | null
           sous_type: string | null
           type: string
+          type_activite: string | null
           updated_at: string
         }
         Insert: {
@@ -661,6 +662,7 @@ export type Database = {
           image_url?: string | null
           sous_type?: string | null
           type: string
+          type_activite?: string | null
           updated_at?: string
         }
         Update: {
@@ -671,6 +673,7 @@ export type Database = {
           image_url?: string | null
           sous_type?: string | null
           type?: string
+          type_activite?: string | null
           updated_at?: string
         }
         Relationships: []
