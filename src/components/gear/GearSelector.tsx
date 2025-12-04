@@ -55,12 +55,12 @@ const COLORS = [
 ];
 
 const ACTIVITY_TYPES = [
-  { label: "Cérémonie", value: "Cérémonie", icon: "🎖️", description: "Tenue de cérémonie" },
-  { label: "Travail", value: "Travail", icon: "💼", description: "Tenue quotidienne" },
-  { label: "Sport", value: "Sport", icon: "🏃", description: "Équipement sportif" },
-  { label: "Terrain", value: "Terrain", icon: "🏕️", description: "Opérations terrain" },
-  { label: "Intervention", value: "Intervention", icon: "⚡", description: "Missions rapides" },
-  { label: "Universel", value: "Universel", icon: "🌐", description: "Articles polyvalents" },
+  { label: "Cérémonie", value: "CEREMONIE", icon: "🎖️", description: "Tenue de cérémonie et événements officiels" },
+  { label: "Travail", value: "TRAVAIL", icon: "💼", description: "Tenue de travail quotidien" },
+  { label: "Sport", value: "SPORT", icon: "🏃", description: "Équipement sportif et entraînement" },
+  { label: "Terrain", value: "TERRAIN", icon: "🏕️", description: "Opérations sur le terrain" },
+  { label: "Intervention", value: "INTERVENTION", icon: "⚡", description: "Missions d'intervention rapide" },
+  { label: "Universel", value: "UNIVERSEL", icon: "🌐", description: "Articles polyvalents" },
 ];
 
 export function GearSelector() {
