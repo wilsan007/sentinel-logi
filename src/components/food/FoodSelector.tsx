@@ -11,10 +11,13 @@ import {
   Plus, 
   Minus, 
   Search,
-  Calendar,
-  Truck,
   AlertTriangle,
-  Check
+  Apple,
+  Coffee,
+  Wheat,
+  Droplet,
+  Salad,
+  Soup
 } from "lucide-react";
 import { ProgressStepper } from "@/components/gear/ProgressStepper";
 import { format } from "date-fns";
@@ -28,13 +31,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 type FoodStep = {
   id: number;
@@ -42,6 +38,11 @@ type FoodStep = {
   description: string;
   completed: boolean;
   current: boolean;
+};
+
+type FoodCategory = {
+  type: string;
+  count: number;
 };
 
 type FoodItem = {
@@ -82,8 +83,28 @@ const UNIT_LABELS: Record<string, string> = {
   unite: "Unités"
 };
 
+const CATEGORY_ICONS: Record<string, React.ReactNode> = {
+  "Conserves": <Soup className="h-12 w-12" />,
+  "Céréales & Féculents": <Wheat className="h-12 w-12" />,
+  "Légumineuses": <Salad className="h-12 w-12" />,
+  "Condiments & Épices": <Apple className="h-12 w-12" />,
+  "Huiles & Matières Grasses": <Droplet className="h-12 w-12" />,
+  "Boissons": <Coffee className="h-12 w-12" />,
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  "Conserves": "text-orange-400",
+  "Céréales & Féculents": "text-amber-400",
+  "Légumineuses": "text-green-400",
+  "Condiments & Épices": "text-red-400",
+  "Huiles & Matières Grasses": "text-yellow-400",
+  "Boissons": "text-cyan-400",
+};
+
 export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps) {
   const [currentStep, setCurrentStep] = useState(0);
+  const [categories, setCategories] = useState<FoodCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
   const [variants, setVariants] = useState<FoodVariant[]>([]);
@@ -105,38 +126,64 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
   // Distribution dialog
   const [distributeDialogOpen, setDistributeDialogOpen] = useState(false);
   const [distributeAmount, setDistributeAmount] = useState(1);
-  const [distributeMotif, setDistributeMotif] = useState("Distribution quotidienne");
   
   const { toast } = useToast();
 
   const steps: FoodStep[] = mode === "stock" ? [
-    { id: 1, name: "Catégorie", description: "Choisir le produit", completed: currentStep > 0, current: currentStep === 0 },
-    { id: 2, name: "Variante", description: "Sélectionner la variante", completed: currentStep > 1, current: currentStep === 1 },
-    { id: 3, name: "Ajouter", description: "Quantité et fournisseur", completed: currentStep > 2, current: currentStep === 2 },
+    { id: 1, name: "Catégorie", description: "Choisir la catégorie", completed: currentStep > 0, current: currentStep === 0 },
+    { id: 2, name: "Produit", description: "Sélectionner le produit", completed: currentStep > 1, current: currentStep === 1 },
+    { id: 3, name: "Variante", description: "Choisir la variante", completed: currentStep > 2, current: currentStep === 2 },
+    { id: 4, name: "Ajouter", description: "Quantité et fournisseur", completed: currentStep > 3, current: currentStep === 3 },
   ] : [
-    { id: 1, name: "Catégorie", description: "Choisir le produit", completed: currentStep > 0, current: currentStep === 0 },
-    { id: 2, name: "Variante", description: "Sélectionner la variante", completed: currentStep > 1, current: currentStep === 1 },
-    { id: 3, name: "Lots", description: "Voir les lots FIFO", completed: currentStep > 2, current: currentStep === 2 },
-    { id: 4, name: "Distribuer", description: "Quantité à distribuer", completed: currentStep > 3, current: currentStep === 3 },
+    { id: 1, name: "Catégorie", description: "Choisir la catégorie", completed: currentStep > 0, current: currentStep === 0 },
+    { id: 2, name: "Produit", description: "Sélectionner le produit", completed: currentStep > 1, current: currentStep === 1 },
+    { id: 3, name: "Variante", description: "Choisir la variante", completed: currentStep > 2, current: currentStep === 2 },
+    { id: 4, name: "Lots", description: "Voir les lots FIFO", completed: currentStep > 3, current: currentStep === 3 },
+    { id: 5, name: "Distribuer", description: "Quantité à distribuer", completed: currentStep > 4, current: currentStep === 4 },
   ];
 
   useEffect(() => {
-    loadFoodItems();
+    loadCategories();
   }, []);
 
-  const loadFoodItems = async () => {
+  const loadCategories = async () => {
     setLoading(true);
+    const { data, error } = await supabase
+      .from("stock_items")
+      .select("type")
+      .eq("categorie", "FOOD");
+
+    if (error) {
+      toast({ title: "Erreur", description: "Impossible de charger les catégories", variant: "destructive" });
+    } else {
+      // Group by type and count
+      const categoryMap = new Map<string, number>();
+      data?.forEach(item => {
+        categoryMap.set(item.type, (categoryMap.get(item.type) || 0) + 1);
+      });
+      const cats = Array.from(categoryMap.entries()).map(([type, count]) => ({ type, count }));
+      setCategories(cats);
+    }
+    setLoading(false);
+  };
+
+  const handleCategorySelect = async (category: string) => {
+    setSelectedCategory(category);
+    setLoading(true);
+
     const { data, error } = await supabase
       .from("stock_items")
       .select("*")
       .eq("categorie", "FOOD")
-      .order("type");
+      .eq("type", category)
+      .order("sous_type");
 
     if (error) {
-      toast({ title: "Erreur", description: "Impossible de charger les articles", variant: "destructive" });
+      toast({ title: "Erreur", description: "Impossible de charger les produits", variant: "destructive" });
     } else {
       setFoodItems(data || []);
     }
+    setCurrentStep(1);
     setLoading(false);
   };
 
@@ -157,7 +204,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
     }
 
     setVariants(data || []);
-    setCurrentStep(1);
+    setCurrentStep(2);
     setLoading(false);
   };
 
@@ -165,7 +212,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
     setSelectedVariant(variant);
 
     if (mode === "stock") {
-      setCurrentStep(2);
+      setCurrentStep(3);
       setAddStockDialogOpen(true);
     } else {
       // Load batches for distribution
@@ -184,7 +231,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
       } else {
         setBatches(data || []);
       }
-      setCurrentStep(2);
+      setCurrentStep(3);
       setLoading(false);
     }
   };
@@ -256,7 +303,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
 
     toast({
       title: "Distribution effectuée",
-      description: `${distributeAmount} ${UNIT_LABELS[selectedVariant.type_unite || "unite"]} distribués (FIFO)`
+      description: `${distributeAmount} ${UNIT_LABELS[selectedVariant?.type_unite || "unite"]} distribués (FIFO)`
     });
 
     setDistributeDialogOpen(false);
@@ -267,8 +314,10 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
 
   const handleReset = () => {
     setCurrentStep(0);
+    setSelectedCategory(null);
     setSelectedItem(null);
     setSelectedVariant(null);
+    setFoodItems([]);
     setVariants([]);
     setBatches([]);
     setNewBatch({ quantity: 1, supplier_name: "", unit_cost: 0, expiry_date: "", customs_document_ref: "" });
@@ -279,18 +328,25 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
     if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
       if (currentStep === 1) {
+        setSelectedCategory(null);
+        setFoodItems([]);
+      } else if (currentStep === 2) {
         setSelectedItem(null);
         setVariants([]);
-      } else if (currentStep === 2) {
+      } else if (currentStep === 3) {
         setSelectedVariant(null);
         setBatches([]);
       }
     }
   };
 
+  const filteredCategories = categories.filter(cat =>
+    cat.type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   const filteredItems = foodItems.filter(item =>
-    item.type.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (item.sous_type && item.sous_type.toLowerCase().includes(searchTerm.toLowerCase()))
+    (item.sous_type && item.sous_type.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (item.description && item.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   const totalBatchQuantity = batches.reduce((sum, b) => sum + b.quantity, 0);
@@ -307,7 +363,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
       )}
 
       <AnimatePresence mode="wait">
-        {/* Step 0: Select Food Category */}
+        {/* Step 0: Select Category */}
         {currentStep === 0 && (
           <motion.div
             key="step-0"
@@ -319,7 +375,56 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher un produit alimentaire..."
+                placeholder="Rechercher une catégorie..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 glass"
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredCategories.map((cat, index) => (
+                <motion.div
+                  key={cat.type}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card
+                    className="glass-hover p-6 neon-border-secondary cursor-pointer group"
+                    onClick={() => handleCategorySelect(cat.type)}
+                  >
+                    <div className="flex flex-col items-center text-center">
+                      <div className={`p-4 rounded-xl bg-secondary/10 group-hover:bg-secondary/20 transition-colors mb-4 ${CATEGORY_COLORS[cat.type] || "text-secondary"}`}>
+                        {CATEGORY_ICONS[cat.type] || <Package className="h-12 w-12" />}
+                      </div>
+                      <h3 className="font-bold text-lg">{cat.type}</h3>
+                      <p className="text-sm text-muted-foreground">{cat.count} produits</p>
+                    </div>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step 1: Select Product */}
+        {currentStep === 1 && (
+          <motion.div
+            key="step-1"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-4"
+          >
+            <h3 className="text-xl font-bold neon-text-secondary">
+              {selectedCategory} - Produits disponibles
+            </h3>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher un produit..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10 glass"
@@ -327,7 +432,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
             </div>
 
             <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {filteredItems.map((item, index) => (
+              {(searchTerm ? filteredItems : foodItems).map((item, index) => (
                 <motion.div
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -339,12 +444,12 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
                     onClick={() => handleItemSelect(item)}
                   >
                     <div className="flex flex-col items-center text-center">
-                      <div className="p-4 rounded-xl bg-secondary/10 group-hover:bg-secondary/20 transition-colors mb-4">
-                        <Package className="h-12 w-12 text-secondary" />
+                      <div className={`p-3 rounded-xl bg-secondary/10 group-hover:bg-secondary/20 transition-colors mb-3 ${CATEGORY_COLORS[selectedCategory || ""] || "text-secondary"}`}>
+                        {CATEGORY_ICONS[selectedCategory || ""] || <Package className="h-8 w-8" />}
                       </div>
-                      <h3 className="font-bold text-lg">{item.type}</h3>
-                      {item.sous_type && (
-                        <p className="text-sm text-muted-foreground">{item.sous_type}</p>
+                      <h3 className="font-bold">{item.sous_type || item.type}</h3>
+                      {item.description && (
+                        <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
                       )}
                     </div>
                   </Card>
@@ -354,35 +459,59 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
           </motion.div>
         )}
 
-        {/* Step 1: Select Variant */}
-        {currentStep === 1 && (
+        {/* Step 2: Select Variant */}
+        {currentStep === 2 && (
           <motion.div
-            key="step-1"
+            key="step-2"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             className="space-y-4"
           >
             <h3 className="text-xl font-bold neon-text-secondary">
-              {selectedItem?.type} - Variantes disponibles
+              {selectedItem?.sous_type || selectedItem?.type} - Stock disponible
             </h3>
 
             {variants.length === 0 ? (
               <Card className="glass p-8 text-center">
                 <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">Aucune variante trouvée pour ce produit</p>
+                <p className="text-muted-foreground mb-4">Aucun stock trouvé pour ce produit dans ce camp</p>
                 {mode === "stock" && (
                   <Button 
-                    onClick={() => {
-                      // Create a default variant
-                      setSelectedVariant({ id: "new", quantite: 0, type_unite: "kg", seuil_alerte: 10 });
-                      setCurrentStep(2);
+                    onClick={async () => {
+                      // Create a default variant for this item
+                      setLoading(true);
+                      const defaultUnit = selectedCategory === "Huiles & Matières Grasses" ? "litre" 
+                        : selectedCategory === "Conserves" ? "boite" 
+                        : "kg";
+                      
+                      const { data: newVariant, error } = await supabase
+                        .from("item_variants")
+                        .insert({
+                          stock_item_id: selectedItem!.id,
+                          location_id: locationId,
+                          quantite: 0,
+                          seuil_alerte: 10,
+                          type_unite: defaultUnit as any
+                        })
+                        .select()
+                        .single();
+
+                      if (error) {
+                        toast({ title: "Erreur", description: "Impossible de créer la variante", variant: "destructive" });
+                        setLoading(false);
+                        return;
+                      }
+
+                      setSelectedVariant(newVariant);
+                      setCurrentStep(3);
                       setAddStockDialogOpen(true);
+                      setLoading(false);
                     }}
                     className="bg-secondary/20 hover:bg-secondary/30 text-secondary"
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Créer une variante
+                    Initialiser le stock
                   </Button>
                 )}
               </Card>
@@ -424,10 +553,10 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
           </motion.div>
         )}
 
-        {/* Step 2 for distribute: Show batches */}
-        {currentStep === 2 && mode === "distribute" && (
+        {/* Step 3 for distribute: Show batches */}
+        {currentStep === 3 && mode === "distribute" && (
           <motion.div
-            key="step-2-distribute"
+            key="step-3-distribute"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -486,7 +615,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
                 <Button 
                   onClick={() => {
                     setDistributeDialogOpen(true);
-                    setCurrentStep(3);
+                    setCurrentStep(4);
                   }}
                   className="w-full bg-secondary hover:bg-secondary/90"
                   disabled={totalBatchQuantity === 0}
@@ -504,19 +633,20 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
       <Dialog open={addStockDialogOpen} onOpenChange={setAddStockDialogOpen}>
         <DialogContent className="glass">
           <DialogHeader>
-            <DialogTitle>Ajouter du stock</DialogTitle>
+            <DialogTitle className="neon-text-secondary">Ajouter du stock</DialogTitle>
             <DialogDescription>
-              {selectedItem?.type} - Nouveau lot
+              {selectedItem?.sous_type || selectedItem?.type}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Quantité *</Label>
+              <Label>Quantité ({UNIT_LABELS[selectedVariant?.type_unite || "unite"]})</Label>
               <Input
                 type="number"
                 min={1}
                 value={newBatch.quantity}
                 onChange={(e) => setNewBatch({ ...newBatch, quantity: parseInt(e.target.value) || 0 })}
+                className="glass"
               />
             </div>
             <div className="space-y-2">
@@ -525,15 +655,17 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
                 value={newBatch.supplier_name}
                 onChange={(e) => setNewBatch({ ...newBatch, supplier_name: e.target.value })}
                 placeholder="Nom du fournisseur"
+                className="glass"
               />
             </div>
             <div className="space-y-2">
-              <Label>Coût unitaire</Label>
+              <Label>Coût unitaire (XAF)</Label>
               <Input
                 type="number"
                 min={0}
                 value={newBatch.unit_cost}
                 onChange={(e) => setNewBatch({ ...newBatch, unit_cost: parseFloat(e.target.value) || 0 })}
+                className="glass"
               />
             </div>
             <div className="space-y-2">
@@ -542,27 +674,28 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
                 type="date"
                 value={newBatch.expiry_date}
                 onChange={(e) => setNewBatch({ ...newBatch, expiry_date: e.target.value })}
+                className="glass"
               />
             </div>
             <div className="space-y-2">
-              <Label>Réf. document douane</Label>
+              <Label>Référence douane</Label>
               <Input
                 value={newBatch.customs_document_ref}
                 onChange={(e) => setNewBatch({ ...newBatch, customs_document_ref: e.target.value })}
-                placeholder="Optionnel"
+                placeholder="Numéro de document"
+                className="glass"
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setAddStockDialogOpen(false)}>
-              Annuler
-            </Button>
+            <Button variant="ghost" onClick={() => setAddStockDialogOpen(false)}>Annuler</Button>
             <Button 
-              onClick={handleAddStock}
+              onClick={handleAddStock} 
               disabled={loading || newBatch.quantity <= 0}
               className="bg-secondary hover:bg-secondary/90"
             >
-              {loading ? "Ajout..." : "Confirmer"}
+              <Plus className="h-4 w-4 mr-2" />
+              Ajouter
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -572,47 +705,33 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
       <Dialog open={distributeDialogOpen} onOpenChange={setDistributeDialogOpen}>
         <DialogContent className="glass">
           <DialogHeader>
-            <DialogTitle>Distribution FIFO</DialogTitle>
+            <DialogTitle className="neon-text-secondary">Distribuer</DialogTitle>
             <DialogDescription>
-              {selectedItem?.type} - Stock disponible: {totalBatchQuantity} {UNIT_LABELS[selectedVariant?.type_unite || "unite"]}
+              {selectedItem?.sous_type || selectedItem?.type} - Stock disponible: {totalBatchQuantity} {UNIT_LABELS[selectedVariant?.type_unite || "unite"]}
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Quantité à distribuer *</Label>
+              <Label>Quantité à distribuer ({UNIT_LABELS[selectedVariant?.type_unite || "unite"]})</Label>
               <Input
                 type="number"
                 min={1}
                 max={totalBatchQuantity}
                 value={distributeAmount}
                 onChange={(e) => setDistributeAmount(parseInt(e.target.value) || 0)}
+                className="glass"
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Motif</Label>
-              <Select value={distributeMotif} onValueChange={setDistributeMotif}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Distribution quotidienne">Distribution quotidienne</SelectItem>
-                  <SelectItem value="Événement spécial">Événement spécial</SelectItem>
-                  <SelectItem value="Urgence">Urgence</SelectItem>
-                  <SelectItem value="Formation">Formation</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDistributeDialogOpen(false)}>
-              Annuler
-            </Button>
+            <Button variant="ghost" onClick={() => setDistributeDialogOpen(false)}>Annuler</Button>
             <Button 
-              onClick={handleDistribute}
+              onClick={handleDistribute} 
               disabled={loading || distributeAmount <= 0 || distributeAmount > totalBatchQuantity}
               className="bg-secondary hover:bg-secondary/90"
             >
-              {loading ? "Distribution..." : "Confirmer"}
+              <Minus className="h-4 w-4 mr-2" />
+              Distribuer
             </Button>
           </DialogFooter>
         </DialogContent>
