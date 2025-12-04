@@ -149,6 +149,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
   // Cart for multi-selection (stock mode)
   const [cart, setCart] = useState<CartItem[]>([]);
   const [activePopover, setActivePopover] = useState<string | null>(null);
+  const [currentStock, setCurrentStock] = useState<number>(0);
   const [popoverData, setPopoverData] = useState({
     quantity: 1,
     supplier_id: "",
@@ -288,6 +289,16 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
         unit_cost: 0,
         expiry_date: ""
       });
+      
+      // Fetch current stock for this item
+      const { data: variantData } = await supabase
+        .from("item_variants")
+        .select("quantite")
+        .eq("stock_item_id", item.id)
+        .eq("location_id", locationId)
+        .maybeSingle();
+      
+      setCurrentStock(variantData?.quantite || 0);
       setActivePopover(item.id);
     } else {
       // Distribution mode - existing flow
@@ -666,6 +677,16 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
                             >
                               <X className="h-4 w-4" />
                             </Button>
+                          </div>
+                          
+                          {/* Current stock display */}
+                          <div className="p-2 rounded-lg bg-secondary/10 border border-secondary/20">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs text-muted-foreground">Stock actuel</span>
+                              <Badge variant="outline" className="bg-secondary/20 text-secondary font-bold">
+                                {currentStock + (cart.find(c => c.item.id === item.id)?.quantity || 0)} unités
+                              </Badge>
+                            </div>
                           </div>
                           
                           <div className="space-y-3">
