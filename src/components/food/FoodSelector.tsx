@@ -17,7 +17,10 @@ import {
   Wheat,
   Droplet,
   Salad,
-  Soup
+  Soup,
+  ShoppingCart,
+  X,
+  Check
 } from "lucide-react";
 import { ProgressStepper } from "@/components/gear/ProgressStepper";
 import { format } from "date-fns";
@@ -30,7 +33,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 
 type FoodStep = {
   id: number;
@@ -57,6 +66,7 @@ type FoodVariant = {
   quantite: number;
   type_unite: string | null;
   seuil_alerte: number | null;
+  stock_item_id: string;
 };
 
 type Batch = {
@@ -68,6 +78,16 @@ type Batch = {
   expiry_date: string | null;
   supplier_name: string | null;
   unit_cost: number | null;
+};
+
+// Cart item for bulk operations
+type CartItem = {
+  item: FoodItem;
+  variant: FoodVariant;
+  quantity: number;
+  supplier_name: string;
+  unit_cost: number;
+  expiry_date: string;
 };
 
 interface FoodSelectorProps {
@@ -113,33 +133,34 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
   const [searchTerm, setSearchTerm] = useState("");
   const [loading, setLoading] = useState(false);
   
-  // Add stock dialog
-  const [addStockDialogOpen, setAddStockDialogOpen] = useState(false);
-  const [newBatch, setNewBatch] = useState({
+  // Cart for multi-selection (stock mode)
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [activePopover, setActivePopover] = useState<string | null>(null);
+  const [popoverData, setPopoverData] = useState({
     quantity: 1,
     supplier_name: "",
     unit_cost: 0,
-    expiry_date: "",
-    customs_document_ref: ""
+    expiry_date: ""
   });
 
   // Distribution dialog
   const [distributeDialogOpen, setDistributeDialogOpen] = useState(false);
   const [distributeAmount, setDistributeAmount] = useState(1);
   
+  // Confirmation dialog for bulk add
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  
   const { toast } = useToast();
 
   const steps: FoodStep[] = mode === "stock" ? [
     { id: 1, name: "Catégorie", description: "Choisir la catégorie", completed: currentStep > 0, current: currentStep === 0 },
-    { id: 2, name: "Produit", description: "Sélectionner le produit", completed: currentStep > 1, current: currentStep === 1 },
-    { id: 3, name: "Variante", description: "Choisir la variante", completed: currentStep > 2, current: currentStep === 2 },
-    { id: 4, name: "Ajouter", description: "Quantité et fournisseur", completed: currentStep > 3, current: currentStep === 3 },
+    { id: 2, name: "Sélection", description: "Ajouter au panier", completed: cart.length > 0, current: currentStep === 1 },
+    { id: 3, name: "Valider", description: "Confirmer l'ajout", completed: false, current: currentStep === 2 },
   ] : [
     { id: 1, name: "Catégorie", description: "Choisir la catégorie", completed: currentStep > 0, current: currentStep === 0 },
     { id: 2, name: "Produit", description: "Sélectionner le produit", completed: currentStep > 1, current: currentStep === 1 },
-    { id: 3, name: "Variante", description: "Choisir la variante", completed: currentStep > 2, current: currentStep === 2 },
-    { id: 4, name: "Lots", description: "Voir les lots FIFO", completed: currentStep > 3, current: currentStep === 3 },
-    { id: 5, name: "Distribuer", description: "Quantité à distribuer", completed: currentStep > 4, current: currentStep === 4 },
+    { id: 3, name: "Lots", description: "Voir les lots FIFO", completed: currentStep > 2, current: currentStep === 2 },
+    { id: 4, name: "Distribuer", description: "Quantité à distribuer", completed: false, current: currentStep === 3 },
   ];
 
   useEffect(() => {
@@ -156,7 +177,6 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
     if (error) {
       toast({ title: "Erreur", description: "Impossible de charger les catégories", variant: "destructive" });
     } else {
-      // Group by type and count
       const categoryMap = new Map<string, number>();
       data?.forEach(item => {
         categoryMap.set(item.type, (categoryMap.get(item.type) || 0) + 1);
@@ -171,7 +191,8 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
     setSelectedCategory(category);
     setLoading(true);
 
-    const { data, error } = await supabase
+    // Load all items with their variants for this category
+    const { data: items, error } = await supabase
       .from("stock_items")
       .select("*")
       .eq("categorie", "FOOD")
@@ -181,105 +202,218 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
     if (error) {
       toast({ title: "Erreur", description: "Impossible de charger les produits", variant: "destructive" });
     } else {
-      setFoodItems(data || []);
+      setFoodItems(items || []);
     }
     setCurrentStep(1);
     setLoading(false);
   };
 
-  const handleItemSelect = async (item: FoodItem) => {
-    setSelectedItem(item);
-    setLoading(true);
-
-    const { data, error } = await supabase
+  // Get or create variant for an item
+  const getOrCreateVariant = async (item: FoodItem): Promise<FoodVariant | null> => {
+    // First try to find existing variant
+    const { data: existingVariant } = await supabase
       .from("item_variants")
       .select("*")
       .eq("stock_item_id", item.id)
-      .eq("location_id", locationId);
+      .eq("location_id", locationId)
+      .maybeSingle();
+
+    if (existingVariant) {
+      return existingVariant;
+    }
+
+    // Create new variant if none exists
+    const defaultUnit = selectedCategory === "Huiles & Matières Grasses" ? "litre" 
+      : selectedCategory === "Conserves" ? "boite" 
+      : "kg";
+
+    const { data: newVariant, error } = await supabase
+      .from("item_variants")
+      .insert({
+        stock_item_id: item.id,
+        location_id: locationId,
+        quantite: 0,
+        seuil_alerte: 10,
+        type_unite: defaultUnit as any
+      })
+      .select()
+      .single();
 
     if (error) {
-      toast({ title: "Erreur", description: "Impossible de charger les variantes", variant: "destructive" });
-      setLoading(false);
+      toast({ title: "Erreur", description: "Impossible de créer la variante", variant: "destructive" });
+      return null;
+    }
+
+    return newVariant;
+  };
+
+  // Handle popover open for stock mode
+  const handleProductClick = async (item: FoodItem) => {
+    if (mode === "stock") {
+      // Reset popover data
+      setPopoverData({
+        quantity: 1,
+        supplier_name: "",
+        unit_cost: 0,
+        expiry_date: ""
+      });
+      setActivePopover(item.id);
+    } else {
+      // Distribution mode - existing flow
+      await handleItemSelectForDistribution(item);
+    }
+  };
+
+  // Add item to cart
+  const handleAddToCart = async (item: FoodItem) => {
+    if (popoverData.quantity <= 0) {
+      toast({ title: "Erreur", description: "La quantité doit être supérieure à 0", variant: "destructive" });
       return;
     }
-
-    setVariants(data || []);
-    setCurrentStep(2);
-    setLoading(false);
-  };
-
-  const handleVariantSelect = async (variant: FoodVariant) => {
-    setSelectedVariant(variant);
-
-    if (mode === "stock") {
-      setCurrentStep(3);
-      setAddStockDialogOpen(true);
-    } else {
-      // Load batches for distribution
-      setLoading(true);
-      const { data, error } = await supabase
-        .from("inventory_batches")
-        .select("*")
-        .eq("item_variant_id", variant.id)
-        .eq("location_id", locationId)
-        .eq("is_depleted", false)
-        .gt("quantity", 0)
-        .order("arrival_date", { ascending: true }); // FIFO
-
-      if (error) {
-        toast({ title: "Erreur", description: "Impossible de charger les lots", variant: "destructive" });
-      } else {
-        setBatches(data || []);
-      }
-      setCurrentStep(3);
-      setLoading(false);
-    }
-  };
-
-  const handleAddStock = async () => {
-    if (!selectedVariant || newBatch.quantity <= 0) return;
 
     setLoading(true);
-    const batchNumber = `BATCH-${Date.now().toString(36).toUpperCase()}`;
-
-    const { error: batchError } = await supabase
-      .from("inventory_batches")
-      .insert({
-        batch_number: batchNumber,
-        item_variant_id: selectedVariant.id,
-        location_id: locationId,
-        quantity: newBatch.quantity,
-        original_quantity: newBatch.quantity,
-        supplier_name: newBatch.supplier_name || null,
-        unit_cost: newBatch.unit_cost || null,
-        expiry_date: newBatch.expiry_date || null,
-        customs_document_ref: newBatch.customs_document_ref || null
-      });
-
-    if (batchError) {
-      toast({ title: "Erreur", description: "Impossible d'ajouter le lot", variant: "destructive" });
+    const variant = await getOrCreateVariant(item);
+    
+    if (!variant) {
       setLoading(false);
       return;
     }
 
-    // Update variant total quantity
-    const { error: updateError } = await supabase
-      .from("item_variants")
-      .update({ quantite: selectedVariant.quantite + newBatch.quantity })
-      .eq("id", selectedVariant.id);
-
-    if (updateError) {
-      toast({ title: "Attention", description: "Stock ajouté mais total non mis à jour", variant: "destructive" });
+    // Check if item already in cart
+    const existingIndex = cart.findIndex(c => c.item.id === item.id);
+    
+    if (existingIndex >= 0) {
+      // Update existing cart item
+      const newCart = [...cart];
+      newCart[existingIndex] = {
+        item,
+        variant,
+        quantity: popoverData.quantity,
+        supplier_name: popoverData.supplier_name,
+        unit_cost: popoverData.unit_cost,
+        expiry_date: popoverData.expiry_date
+      };
+      setCart(newCart);
+    } else {
+      // Add new item to cart
+      setCart([...cart, {
+        item,
+        variant,
+        quantity: popoverData.quantity,
+        supplier_name: popoverData.supplier_name,
+        unit_cost: popoverData.unit_cost,
+        expiry_date: popoverData.expiry_date
+      }]);
     }
 
+    setActivePopover(null);
+    setLoading(false);
     toast({ 
-      title: "Stock ajouté", 
-      description: `${newBatch.quantity} ${UNIT_LABELS[selectedVariant.type_unite || "unite"]} ajoutés avec succès` 
+      title: "Ajouté au panier", 
+      description: `${item.sous_type || item.type} - ${popoverData.quantity} unités` 
     });
+  };
 
-    setAddStockDialogOpen(false);
+  // Remove from cart
+  const handleRemoveFromCart = (itemId: string) => {
+    setCart(cart.filter(c => c.item.id !== itemId));
+  };
+
+  // Submit all cart items
+  const handleSubmitCart = async () => {
+    if (cart.length === 0) return;
+
+    setLoading(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const cartItem of cart) {
+      const batchNumber = `BATCH-${Date.now().toString(36).toUpperCase()}-${Math.random().toString(36).substring(2, 5).toUpperCase()}`;
+
+      const { error: batchError } = await supabase
+        .from("inventory_batches")
+        .insert({
+          batch_number: batchNumber,
+          item_variant_id: cartItem.variant.id,
+          location_id: locationId,
+          quantity: cartItem.quantity,
+          original_quantity: cartItem.quantity,
+          supplier_name: cartItem.supplier_name || null,
+          unit_cost: cartItem.unit_cost || null,
+          expiry_date: cartItem.expiry_date || null
+        });
+
+      if (batchError) {
+        errorCount++;
+        continue;
+      }
+
+      // Update variant total quantity
+      await supabase
+        .from("item_variants")
+        .update({ quantite: cartItem.variant.quantite + cartItem.quantity })
+        .eq("id", cartItem.variant.id);
+
+      successCount++;
+    }
+
+    setLoading(false);
+    setConfirmDialogOpen(false);
+
+    if (errorCount > 0) {
+      toast({ 
+        title: "Ajout partiel", 
+        description: `${successCount} produits ajoutés, ${errorCount} erreurs`,
+        variant: "destructive"
+      });
+    } else {
+      toast({ 
+        title: "Stock ajouté", 
+        description: `${successCount} produits ajoutés avec succès` 
+      });
+    }
+
+    setCart([]);
     handleReset();
     onSuccess?.();
+  };
+
+  // Distribution mode handlers
+  const handleItemSelectForDistribution = async (item: FoodItem) => {
+    setSelectedItem(item);
+    setLoading(true);
+
+    const { data: variantData } = await supabase
+      .from("item_variants")
+      .select("*")
+      .eq("stock_item_id", item.id)
+      .eq("location_id", locationId)
+      .maybeSingle();
+
+    if (!variantData) {
+      toast({ title: "Info", description: "Aucun stock disponible pour ce produit" });
+      setLoading(false);
+      return;
+    }
+
+    setSelectedVariant(variantData);
+
+    // Load batches for distribution
+    const { data: batchData, error } = await supabase
+      .from("inventory_batches")
+      .select("*")
+      .eq("item_variant_id", variantData.id)
+      .eq("location_id", locationId)
+      .eq("is_depleted", false)
+      .gt("quantity", 0)
+      .order("arrival_date", { ascending: true });
+
+    if (error) {
+      toast({ title: "Erreur", description: "Impossible de charger les lots", variant: "destructive" });
+    } else {
+      setBatches(batchData || []);
+    }
+    setCurrentStep(2);
     setLoading(false);
   };
 
@@ -288,7 +422,6 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
 
     setLoading(true);
 
-    // Use the FIFO distribution function
     const { data, error } = await supabase.rpc('distribute_food_fifo', {
       p_item_variant_id: selectedVariant.id,
       p_location_id: locationId,
@@ -320,8 +453,8 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
     setFoodItems([]);
     setVariants([]);
     setBatches([]);
-    setNewBatch({ quantity: 1, supplier_name: "", unit_cost: 0, expiry_date: "", customs_document_ref: "" });
     setDistributeAmount(1);
+    setActivePopover(null);
   };
 
   const handleBack = () => {
@@ -332,9 +465,6 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
         setFoodItems([]);
       } else if (currentStep === 2) {
         setSelectedItem(null);
-        setVariants([]);
-      } else if (currentStep === 3) {
-        setSelectedVariant(null);
         setBatches([]);
       }
     }
@@ -350,17 +480,34 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
   );
 
   const totalBatchQuantity = batches.reduce((sum, b) => sum + b.quantity, 0);
+  const cartItemIds = new Set(cart.map(c => c.item.id));
 
   return (
     <div className="space-y-6">
       <ProgressStepper steps={steps} />
 
-      {currentStep > 0 && (
-        <Button variant="ghost" onClick={handleBack} className="gap-2">
-          <ArrowLeft className="h-4 w-4" />
-          Retour
-        </Button>
-      )}
+      <div className="flex items-center justify-between">
+        {currentStep > 0 && (
+          <Button variant="ghost" onClick={handleBack} className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Retour
+          </Button>
+        )}
+        
+        {/* Cart indicator for stock mode */}
+        {mode === "stock" && cart.length > 0 && (
+          <Button 
+            onClick={() => setConfirmDialogOpen(true)}
+            className="bg-secondary hover:bg-secondary/90 gap-2"
+          >
+            <ShoppingCart className="h-4 w-4" />
+            Panier ({cart.length})
+            <Badge variant="secondary" className="ml-1 bg-background/20">
+              {cart.reduce((sum, c) => sum + c.quantity, 0)} unités
+            </Badge>
+          </Button>
+        )}
+      </div>
 
       <AnimatePresence mode="wait">
         {/* Step 0: Select Category */}
@@ -408,17 +555,196 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
           </motion.div>
         )}
 
-        {/* Step 1: Select Product */}
-        {currentStep === 1 && (
+        {/* Step 1: Product Selection with Popovers (Stock Mode) */}
+        {currentStep === 1 && mode === "stock" && (
           <motion.div
-            key="step-1"
+            key="step-1-stock"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             className="space-y-4"
           >
             <h3 className="text-xl font-bold neon-text-secondary">
-              {selectedCategory} - Produits disponibles
+              {selectedCategory} - Cliquez pour ajouter au panier
+            </h3>
+
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Rechercher un produit..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 glass"
+              />
+            </div>
+
+            <div className="grid md:grid-cols-3 lg:grid-cols-4 gap-4">
+              {(searchTerm ? filteredItems : foodItems).map((item, index) => {
+                const isInCart = cartItemIds.has(item.id);
+                const cartItem = cart.find(c => c.item.id === item.id);
+                
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.03 }}
+                  >
+                    <Popover 
+                      open={activePopover === item.id} 
+                      onOpenChange={(open) => {
+                        if (!open) setActivePopover(null);
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <Card
+                          className={`glass-hover p-4 cursor-pointer group relative transition-all ${
+                            isInCart 
+                              ? "border-secondary ring-2 ring-secondary/30" 
+                              : "neon-border-secondary"
+                          }`}
+                          onClick={() => handleProductClick(item)}
+                        >
+                          {isInCart && (
+                            <div className="absolute -top-2 -right-2 bg-secondary text-secondary-foreground rounded-full p-1">
+                              <Check className="h-4 w-4" />
+                            </div>
+                          )}
+                          <div className="flex flex-col items-center text-center">
+                            <div className={`p-3 rounded-xl bg-secondary/10 group-hover:bg-secondary/20 transition-colors mb-3 ${CATEGORY_COLORS[selectedCategory || ""] || "text-secondary"}`}>
+                              {CATEGORY_ICONS[selectedCategory || ""] || <Package className="h-8 w-8" />}
+                            </div>
+                            <h3 className="font-bold text-sm">{item.sous_type || item.type}</h3>
+                            {isInCart && cartItem && (
+                              <Badge className="mt-2 bg-secondary/20 text-secondary">
+                                {cartItem.quantity} unités
+                              </Badge>
+                            )}
+                          </div>
+                        </Card>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-72 glass" side="right" align="start">
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between">
+                            <h4 className="font-bold text-secondary">{item.sous_type || item.type}</h4>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              className="h-6 w-6"
+                              onClick={() => setActivePopover(null)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </div>
+                          
+                          <div className="space-y-3">
+                            <div className="space-y-1">
+                              <Label className="text-xs">Quantité</Label>
+                              <div className="flex items-center gap-2">
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => setPopoverData(p => ({ ...p, quantity: Math.max(1, p.quantity - 1) }))}
+                                >
+                                  <Minus className="h-3 w-3" />
+                                </Button>
+                                <Input
+                                  type="number"
+                                  min={1}
+                                  value={popoverData.quantity}
+                                  onChange={(e) => setPopoverData(p => ({ ...p, quantity: parseInt(e.target.value) || 1 }))}
+                                  className="h-8 text-center"
+                                />
+                                <Button
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-8 w-8"
+                                  onClick={() => setPopoverData(p => ({ ...p, quantity: p.quantity + 1 }))}
+                                >
+                                  <Plus className="h-3 w-3" />
+                                </Button>
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-xs">Fournisseur</Label>
+                              <Input
+                                value={popoverData.supplier_name}
+                                onChange={(e) => setPopoverData(p => ({ ...p, supplier_name: e.target.value }))}
+                                placeholder="Nom du fournisseur"
+                                className="h-8 text-sm"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-xs">Coût unitaire (XAF)</Label>
+                              <Input
+                                type="number"
+                                min={0}
+                                value={popoverData.unit_cost}
+                                onChange={(e) => setPopoverData(p => ({ ...p, unit_cost: parseFloat(e.target.value) || 0 }))}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+
+                            <div className="space-y-1">
+                              <Label className="text-xs">Date d'expiration</Label>
+                              <Input
+                                type="date"
+                                value={popoverData.expiry_date}
+                                onChange={(e) => setPopoverData(p => ({ ...p, expiry_date: e.target.value }))}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                          </div>
+
+                          <div className="flex gap-2">
+                            {isInCart && (
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                className="flex-1"
+                                onClick={() => {
+                                  handleRemoveFromCart(item.id);
+                                  setActivePopover(null);
+                                }}
+                              >
+                                <X className="h-3 w-3 mr-1" />
+                                Retirer
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              className="flex-1 bg-secondary hover:bg-secondary/90"
+                              onClick={() => handleAddToCart(item)}
+                              disabled={loading}
+                            >
+                              <Plus className="h-3 w-3 mr-1" />
+                              {isInCart ? "Modifier" : "Ajouter"}
+                            </Button>
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                  </motion.div>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
+        {/* Step 1: Product Selection (Distribute Mode) */}
+        {currentStep === 1 && mode === "distribute" && (
+          <motion.div
+            key="step-1-distribute"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+            className="space-y-4"
+          >
+            <h3 className="text-xl font-bold neon-text-secondary">
+              {selectedCategory} - Sélectionner un produit
             </h3>
 
             <div className="relative">
@@ -437,20 +763,17 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: index * 0.03 }}
                 >
                   <Card
-                    className="glass-hover p-6 neon-border-secondary cursor-pointer group"
-                    onClick={() => handleItemSelect(item)}
+                    className="glass-hover p-4 neon-border-secondary cursor-pointer group"
+                    onClick={() => handleProductClick(item)}
                   >
                     <div className="flex flex-col items-center text-center">
                       <div className={`p-3 rounded-xl bg-secondary/10 group-hover:bg-secondary/20 transition-colors mb-3 ${CATEGORY_COLORS[selectedCategory || ""] || "text-secondary"}`}>
                         {CATEGORY_ICONS[selectedCategory || ""] || <Package className="h-8 w-8" />}
                       </div>
-                      <h3 className="font-bold">{item.sous_type || item.type}</h3>
-                      {item.description && (
-                        <p className="text-xs text-muted-foreground mt-1">{item.description}</p>
-                      )}
+                      <h3 className="font-bold text-sm">{item.sous_type || item.type}</h3>
                     </div>
                   </Card>
                 </motion.div>
@@ -459,104 +782,10 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
           </motion.div>
         )}
 
-        {/* Step 2: Select Variant */}
-        {currentStep === 2 && (
+        {/* Step 2 for distribute: Show batches */}
+        {currentStep === 2 && mode === "distribute" && (
           <motion.div
-            key="step-2"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-            className="space-y-4"
-          >
-            <h3 className="text-xl font-bold neon-text-secondary">
-              {selectedItem?.sous_type || selectedItem?.type} - Stock disponible
-            </h3>
-
-            {variants.length === 0 ? (
-              <Card className="glass p-8 text-center">
-                <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-muted-foreground mb-4">Aucun stock trouvé pour ce produit dans ce camp</p>
-                {mode === "stock" && (
-                  <Button 
-                    onClick={async () => {
-                      // Create a default variant for this item
-                      setLoading(true);
-                      const defaultUnit = selectedCategory === "Huiles & Matières Grasses" ? "litre" 
-                        : selectedCategory === "Conserves" ? "boite" 
-                        : "kg";
-                      
-                      const { data: newVariant, error } = await supabase
-                        .from("item_variants")
-                        .insert({
-                          stock_item_id: selectedItem!.id,
-                          location_id: locationId,
-                          quantite: 0,
-                          seuil_alerte: 10,
-                          type_unite: defaultUnit as any
-                        })
-                        .select()
-                        .single();
-
-                      if (error) {
-                        toast({ title: "Erreur", description: "Impossible de créer la variante", variant: "destructive" });
-                        setLoading(false);
-                        return;
-                      }
-
-                      setSelectedVariant(newVariant);
-                      setCurrentStep(3);
-                      setAddStockDialogOpen(true);
-                      setLoading(false);
-                    }}
-                    className="bg-secondary/20 hover:bg-secondary/30 text-secondary"
-                  >
-                    <Plus className="h-4 w-4 mr-2" />
-                    Initialiser le stock
-                  </Button>
-                )}
-              </Card>
-            ) : (
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {variants.map((variant, index) => {
-                  const isLowStock = variant.seuil_alerte && variant.quantite <= variant.seuil_alerte;
-                  return (
-                    <motion.div
-                      key={variant.id}
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: index * 0.05 }}
-                    >
-                      <Card
-                        className={`glass-hover p-6 cursor-pointer ${isLowStock ? "border-destructive/50" : "neon-border-secondary"}`}
-                        onClick={() => handleVariantSelect(variant)}
-                      >
-                        <div className="flex items-center justify-between mb-4">
-                          <span className="text-2xl font-bold text-secondary">
-                            {variant.quantite}
-                          </span>
-                          <span className="text-sm text-muted-foreground">
-                            {UNIT_LABELS[variant.type_unite || "unite"]}
-                          </span>
-                        </div>
-                        {isLowStock && (
-                          <div className="flex items-center gap-2 text-destructive text-sm">
-                            <AlertTriangle className="h-4 w-4" />
-                            Stock bas
-                          </div>
-                        )}
-                      </Card>
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
-          </motion.div>
-        )}
-
-        {/* Step 3 for distribute: Show batches */}
-        {currentStep === 3 && mode === "distribute" && (
-          <motion.div
-            key="step-3-distribute"
+            key="step-2-distribute"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -564,7 +793,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
           >
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-bold neon-text-secondary">
-                Lots disponibles (FIFO)
+                {selectedItem?.sous_type || selectedItem?.type} - Lots disponibles (FIFO)
               </h3>
               <div className="text-sm text-muted-foreground">
                 Total: <span className="font-bold text-secondary">{totalBatchQuantity}</span> {UNIT_LABELS[selectedVariant?.type_unite || "unite"]}
@@ -615,7 +844,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
                 <Button 
                   onClick={() => {
                     setDistributeDialogOpen(true);
-                    setCurrentStep(4);
+                    setCurrentStep(3);
                   }}
                   className="w-full bg-secondary hover:bg-secondary/90"
                   disabled={totalBatchQuantity === 0}
@@ -629,73 +858,66 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
         )}
       </AnimatePresence>
 
-      {/* Add Stock Dialog */}
-      <Dialog open={addStockDialogOpen} onOpenChange={setAddStockDialogOpen}>
-        <DialogContent className="glass">
+      {/* Cart Confirmation Dialog */}
+      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <DialogContent className="glass max-w-lg max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="neon-text-secondary">Ajouter du stock</DialogTitle>
+            <DialogTitle className="neon-text-secondary flex items-center gap-2">
+              <ShoppingCart className="h-5 w-5" />
+              Panier ({cart.length} produits)
+            </DialogTitle>
             <DialogDescription>
-              {selectedItem?.sous_type || selectedItem?.type}
+              Vérifiez et confirmez l'ajout de stock
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Quantité ({UNIT_LABELS[selectedVariant?.type_unite || "unite"]})</Label>
-              <Input
-                type="number"
-                min={1}
-                value={newBatch.quantity}
-                onChange={(e) => setNewBatch({ ...newBatch, quantity: parseInt(e.target.value) || 0 })}
-                className="glass"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Fournisseur</Label>
-              <Input
-                value={newBatch.supplier_name}
-                onChange={(e) => setNewBatch({ ...newBatch, supplier_name: e.target.value })}
-                placeholder="Nom du fournisseur"
-                className="glass"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Coût unitaire (XAF)</Label>
-              <Input
-                type="number"
-                min={0}
-                value={newBatch.unit_cost}
-                onChange={(e) => setNewBatch({ ...newBatch, unit_cost: parseFloat(e.target.value) || 0 })}
-                className="glass"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Date d'expiration</Label>
-              <Input
-                type="date"
-                value={newBatch.expiry_date}
-                onChange={(e) => setNewBatch({ ...newBatch, expiry_date: e.target.value })}
-                className="glass"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Référence douane</Label>
-              <Input
-                value={newBatch.customs_document_ref}
-                onChange={(e) => setNewBatch({ ...newBatch, customs_document_ref: e.target.value })}
-                placeholder="Numéro de document"
-                className="glass"
-              />
+          
+          <div className="space-y-3 py-4">
+            {cart.map((cartItem) => (
+              <Card key={cartItem.item.id} className="glass p-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">{cartItem.item.sous_type || cartItem.item.type}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {cartItem.quantity} unités
+                      {cartItem.supplier_name && ` • ${cartItem.supplier_name}`}
+                    </p>
+                    {cartItem.unit_cost > 0 && (
+                      <p className="text-xs text-muted-foreground">
+                        {cartItem.unit_cost.toLocaleString()} XAF/unité
+                      </p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-destructive hover:text-destructive"
+                    onClick={() => handleRemoveFromCart(cartItem.item.id)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              </Card>
+            ))}
+          </div>
+
+          <div className="border-t border-border pt-4">
+            <div className="flex justify-between text-sm mb-4">
+              <span className="text-muted-foreground">Total unités:</span>
+              <span className="font-bold">{cart.reduce((sum, c) => sum + c.quantity, 0)}</span>
             </div>
           </div>
+
           <DialogFooter>
-            <Button variant="ghost" onClick={() => setAddStockDialogOpen(false)}>Annuler</Button>
+            <Button variant="ghost" onClick={() => setConfirmDialogOpen(false)}>
+              Continuer les achats
+            </Button>
             <Button 
-              onClick={handleAddStock} 
-              disabled={loading || newBatch.quantity <= 0}
+              onClick={handleSubmitCart} 
+              disabled={loading || cart.length === 0}
               className="bg-secondary hover:bg-secondary/90"
             >
-              <Plus className="h-4 w-4 mr-2" />
-              Ajouter
+              <Check className="h-4 w-4 mr-2" />
+              Confirmer l'ajout
             </Button>
           </DialogFooter>
         </DialogContent>
