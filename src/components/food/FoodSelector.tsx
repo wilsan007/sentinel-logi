@@ -139,6 +139,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
   const [categories, setCategories] = useState<FoodCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [foodItems, setFoodItems] = useState<FoodItem[]>([]);
+  const [itemStocks, setItemStocks] = useState<Record<string, number>>({});
   const [selectedItem, setSelectedItem] = useState<FoodItem | null>(null);
   const [variants, setVariants] = useState<FoodVariant[]>([]);
   const [selectedVariant, setSelectedVariant] = useState<FoodVariant | null>(null);
@@ -234,6 +235,21 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
       toast({ title: "Erreur", description: "Impossible de charger les produits", variant: "destructive" });
     } else {
       setFoodItems(items || []);
+      
+      // Fetch stock quantities for all items
+      if (items && items.length > 0) {
+        const { data: variants } = await supabase
+          .from("item_variants")
+          .select("stock_item_id, quantite")
+          .eq("location_id", locationId)
+          .in("stock_item_id", items.map(i => i.id));
+        
+        const stockMap: Record<string, number> = {};
+        variants?.forEach(v => {
+          stockMap[v.stock_item_id] = v.quantite;
+        });
+        setItemStocks(stockMap);
+      }
     }
     setCurrentStep(1);
     setLoading(false);
@@ -653,13 +669,16 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
                             </div>
                           )}
                           <div className="flex flex-col items-center text-center">
-                            <div className={`p-3 rounded-xl bg-secondary/10 group-hover:bg-secondary/20 transition-colors mb-3 ${CATEGORY_COLORS[selectedCategory || ""] || "text-secondary"}`}>
+                            <div className={`p-3 rounded-xl bg-secondary/10 group-hover:bg-secondary/20 transition-colors mb-2 ${CATEGORY_COLORS[selectedCategory || ""] || "text-secondary"}`}>
                               {CATEGORY_ICONS[selectedCategory || ""] || <Package className="h-8 w-8" />}
                             </div>
                             <h3 className="font-bold text-sm">{item.sous_type || item.type}</h3>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Stock: <span className="font-semibold text-secondary">{(itemStocks[item.id] || 0) + (cart.find(c => c.item.id === item.id)?.quantity || 0)}</span>
+                            </p>
                             {isInCart && cartItem && (
                               <Badge className="mt-2 bg-secondary/20 text-secondary">
-                                {cartItem.quantity} unités
+                                +{cartItem.quantity} au panier
                               </Badge>
                             )}
                           </div>
