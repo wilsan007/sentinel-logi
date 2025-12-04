@@ -64,17 +64,22 @@ export const DashboardWidgets = ({ locationId }: DashboardWidgetsProps) => {
         quantite,
         seuil_alerte,
         stock_items!inner(type, sous_type, categorie)
-      `)
-      .or('quantite.eq.0,quantite.lte.seuil_alerte');
+      `);
 
     if (locationId) {
       query = query.eq('location_id', locationId);
     }
 
-    const { data: lowStock } = await query;
+    const { data: allStock } = await query;
     
-    if (lowStock) {
-      const formatted = lowStock.map((item: any) => ({
+    if (allStock) {
+      // Filter client-side: items where quantite = 0 OR quantite <= seuil_alerte
+      const lowStockData = allStock.filter((item: any) => {
+        const threshold = item.seuil_alerte || 10;
+        return item.quantite === 0 || item.quantite <= threshold;
+      });
+      
+      const formatted = lowStockData.map((item: any) => ({
         id: item.id,
         quantite: item.quantite,
         seuil_alerte: item.seuil_alerte || 10,
