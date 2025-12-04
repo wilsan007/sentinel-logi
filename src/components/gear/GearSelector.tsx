@@ -177,16 +177,23 @@ export function GearSelector() {
     
     const { data: userRoles } = await supabase
       .from("user_roles")
-      .select("location_id")
+      .select("location_id, role")
       .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-      .single();
+      .maybeSingle();
 
-    const { data, error } = await supabase
+    // Build query - admins can see all locations
+    let query = supabase
       .from("item_variants")
       .select("couleur")
       .eq("stock_item_id", item.id)
-      .eq("location_id", userRoles?.location_id || "")
       .gt("quantite", 0);
+
+    // Only filter by location for non-admin users
+    if (userRoles?.location_id) {
+      query = query.eq("location_id", userRoles.location_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       toast({ title: "Erreur", description: "Impossible de charger les couleurs", variant: "destructive" });
@@ -194,7 +201,7 @@ export function GearSelector() {
     }
 
     if (!data || data.length === 0) {
-      toast({ title: "Stock épuisé", description: "Aucune variante disponible", variant: "destructive" });
+      toast({ title: "Stock épuisé", description: "Aucune variante disponible pour cet article", variant: "destructive" });
       return;
     }
 
@@ -208,17 +215,24 @@ export function GearSelector() {
     
     const { data: userRoles } = await supabase
       .from("user_roles")
-      .select("location_id")
+      .select("location_id, role")
       .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-      .single();
+      .maybeSingle();
 
-    const { data, error } = await supabase
+    // Build query - admins can see all locations
+    let query = supabase
       .from("item_variants")
       .select("*")
       .eq("stock_item_id", selectedItem?.id || "")
-      .eq("location_id", userRoles?.location_id || "")
       .eq("couleur", color)
       .gt("quantite", 0);
+
+    // Only filter by location for non-admin users
+    if (userRoles?.location_id) {
+      query = query.eq("location_id", userRoles.location_id);
+    }
+
+    const { data, error } = await query;
 
     if (error) {
       toast({ title: "Erreur", description: "Impossible de charger les tailles", variant: "destructive" });
@@ -226,7 +240,7 @@ export function GearSelector() {
     }
 
     if (!data || data.length === 0) {
-      toast({ title: "Stock épuisé", description: "Aucune taille disponible", variant: "destructive" });
+      toast({ title: "Stock épuisé", description: "Aucune taille disponible pour cette couleur", variant: "destructive" });
       return;
     }
 
