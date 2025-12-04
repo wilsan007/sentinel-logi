@@ -38,8 +38,21 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+
+type Supplier = {
+  id: string;
+  name: string;
+  code: string;
+};
 
 type FoodStep = {
   id: number;
@@ -138,10 +151,14 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
   const [activePopover, setActivePopover] = useState<string | null>(null);
   const [popoverData, setPopoverData] = useState({
     quantity: 1,
+    supplier_id: "",
     supplier_name: "",
     unit_cost: 0,
     expiry_date: ""
   });
+
+  // Suppliers list
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   // Distribution dialog
   const [distributeDialogOpen, setDistributeDialogOpen] = useState(false);
@@ -165,7 +182,20 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
 
   useEffect(() => {
     loadCategories();
+    loadSuppliers();
   }, []);
+
+  const loadSuppliers = async () => {
+    const { data, error } = await supabase
+      .from("suppliers")
+      .select("id, name, code")
+      .eq("is_active", true)
+      .order("name");
+
+    if (!error && data) {
+      setSuppliers(data);
+    }
+  };
 
   const loadCategories = async () => {
     setLoading(true);
@@ -253,6 +283,7 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
       // Reset popover data
       setPopoverData({
         quantity: 1,
+        supplier_id: "",
         supplier_name: "",
         unit_cost: 0,
         expiry_date: ""
@@ -669,12 +700,28 @@ export function FoodSelector({ locationId, mode, onSuccess }: FoodSelectorProps)
 
                             <div className="space-y-1">
                               <Label className="text-xs">Fournisseur</Label>
-                              <Input
-                                value={popoverData.supplier_name}
-                                onChange={(e) => setPopoverData(p => ({ ...p, supplier_name: e.target.value }))}
-                                placeholder="Nom du fournisseur"
-                                className="h-8 text-sm"
-                              />
+                              <Select
+                                value={popoverData.supplier_id}
+                                onValueChange={(value) => {
+                                  const supplier = suppliers.find(s => s.id === value);
+                                  setPopoverData(p => ({ 
+                                    ...p, 
+                                    supplier_id: value,
+                                    supplier_name: supplier?.name || ""
+                                  }));
+                                }}
+                              >
+                                <SelectTrigger className="h-8 text-sm bg-background">
+                                  <SelectValue placeholder="Sélectionner un fournisseur" />
+                                </SelectTrigger>
+                                <SelectContent className="bg-background border border-border z-50">
+                                  {suppliers.map((supplier) => (
+                                    <SelectItem key={supplier.id} value={supplier.id}>
+                                      {supplier.name} ({supplier.code})
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                             </div>
 
                             <div className="space-y-1">
