@@ -244,7 +244,30 @@ export function GearSelector() {
       return;
     }
 
-    setAvailableSizes(data);
+    // Filter sizes by personnel gender
+    let filteredSizes = data;
+    if (selectedPersonnel?.sexe) {
+      const personnelGender = selectedPersonnel.sexe.toLowerCase();
+      filteredSizes = data.filter(variant => {
+        const variantGenre = variant.genre?.toLowerCase() || "";
+        // Show if: no genre specified, unisex, or matches personnel's gender
+        if (!variant.genre || variantGenre === "unisexe" || variantGenre === "") {
+          return true;
+        }
+        return variantGenre === personnelGender;
+      });
+    }
+
+    if (filteredSizes.length === 0) {
+      toast({ 
+        title: "Stock non disponible", 
+        description: `Aucune taille disponible pour le genre ${selectedPersonnel?.sexe}`, 
+        variant: "destructive" 
+      });
+      return;
+    }
+
+    setAvailableSizes(filteredSizes);
     setCurrentStep("size");
   };
 
