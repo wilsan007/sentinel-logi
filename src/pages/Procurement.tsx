@@ -40,7 +40,7 @@ export default function Procurement() {
       const { data: stockCentral } = await supabase
         .from("locations")
         .select("id, nom, code")
-        .eq("code", "STOCK_CENTRAL")
+        .eq("code", "SC-000")
         .single();
       
       if (stockCentral) {
