@@ -21,12 +21,13 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Package, Truck, FileText, DollarSign, Building2, Calendar, MapPin, Hash } from "lucide-react";
+import { Loader2, Package, Truck, FileText, DollarSign, Building2, Calendar, MapPin, Hash, PackageCheck } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { SupplierSelector } from "./SupplierSelector";
 import { OrderItemsManager } from "./OrderItemsManager";
 import { ProcurementWorkflowStepper } from "./ProcurementWorkflowStepper";
+import { ReceiveOrderDialog } from "./ReceiveOrderDialog";
 import type { Database } from "@/integrations/supabase/types";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -79,6 +80,7 @@ export const OrderDetailDialog = ({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState("general");
+  const [receiveDialogOpen, setReceiveDialogOpen] = useState(false);
   const { toast } = useToast();
 
   // Form state
@@ -507,6 +509,18 @@ export const OrderDetailDialog = ({
           >
             Fermer
           </Button>
+          
+          {/* Receive button - only show for IN_TRANSIT or CUSTOMS_ENTRY */}
+          {(order?.stage === "IN_TRANSIT" || order?.stage === "CUSTOMS_ENTRY") && (
+            <Button
+              onClick={() => setReceiveDialogOpen(true)}
+              className="bg-green-600 hover:bg-green-700 text-white gap-2"
+            >
+              <PackageCheck className="h-4 w-4" />
+              Réceptionner la commande
+            </Button>
+          )}
+          
           <Button
             onClick={handleSave}
             disabled={saving}
@@ -522,6 +536,20 @@ export const OrderDetailDialog = ({
             )}
           </Button>
         </div>
+
+        {/* Receive Order Dialog */}
+        {orderId && (
+          <ReceiveOrderDialog
+            open={receiveDialogOpen}
+            onOpenChange={setReceiveDialogOpen}
+            orderId={orderId}
+            onSuccess={() => {
+              setReceiveDialogOpen(false);
+              loadOrder();
+              onSuccess();
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
