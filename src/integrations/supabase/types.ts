@@ -129,6 +129,57 @@ export type Database = {
         }
         Relationships: []
       }
+      exceptional_access_requests: {
+        Row: {
+          admin_response: string | null
+          created_at: string
+          id: string
+          location_id: string
+          processed_at: string | null
+          processed_by: string | null
+          reason: string
+          requested_by: string
+          status: string
+        }
+        Insert: {
+          admin_response?: string | null
+          created_at?: string
+          id?: string
+          location_id: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason: string
+          requested_by: string
+          status?: string
+        }
+        Update: {
+          admin_response?: string | null
+          created_at?: string
+          id?: string
+          location_id?: string
+          processed_at?: string | null
+          processed_by?: string | null
+          reason?: string
+          requested_by?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exceptional_access_requests_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exceptional_access_requests_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "view_camp_consumption_rate"
+            referencedColumns: ["location_id"]
+          },
+        ]
+      }
       exceptional_submission_access: {
         Row: {
           created_at: string
