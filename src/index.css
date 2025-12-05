@@ -90,6 +90,10 @@
     @apply border-secondary/50 shadow-[0_0_20px_rgba(251,146,60,0.3)];
   }
   
+  .neon-border-emerald {
+    @apply border-emerald-500/50 shadow-[0_0_20px_rgba(16,185,129,0.3)];
+  }
+  
   .neon-text-primary {
     @apply text-primary drop-shadow-[0_0_8px_rgba(6,182,212,0.5)];
   }
