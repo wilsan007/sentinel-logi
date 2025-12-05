@@ -15,12 +15,15 @@ import {
   Package,
   Loader2,
   AlertTriangle,
-  Send
+  Send,
+  Lock
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreateDemandeDialog } from "./CreateDemandeDialog";
+import { SubmissionWindowBanner } from "./SubmissionWindowBanner";
+import { useSubmissionWindow } from "@/hooks/useSubmissionWindow";
 
 interface DemandesManagerProps {
   locationId: string;
@@ -55,6 +58,7 @@ export function DemandesManager({ locationId }: DemandesManagerProps) {
   const [activeTab, setActiveTab] = useState("en_attente");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { toast } = useToast();
+  const submissionWindow = useSubmissionWindow();
 
   useEffect(() => {
     loadDemandes();
@@ -110,6 +114,9 @@ export function DemandesManager({ locationId }: DemandesManagerProps) {
 
   return (
     <div className="space-y-6">
+      {/* Submission Window Banner */}
+      <SubmissionWindowBanner />
+
       {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-4">
         <Card className="glass border-amber-500/30">
@@ -171,10 +178,21 @@ export function DemandesManager({ locationId }: DemandesManagerProps) {
         </div>
         <Button 
           onClick={() => setCreateDialogOpen(true)}
-          className="bg-purple-600 hover:bg-purple-700 gap-2"
+          className={`gap-2 ${submissionWindow.isOpen ? 'bg-purple-600 hover:bg-purple-700' : 'bg-muted text-muted-foreground cursor-not-allowed'}`}
+          disabled={!submissionWindow.isOpen}
+          title={!submissionWindow.isOpen ? "Fenêtre de soumission fermée" : undefined}
         >
-          <Plus className="h-4 w-4" />
-          Nouvelle demande
+          {submissionWindow.isOpen ? (
+            <>
+              <Plus className="h-4 w-4" />
+              Nouvelle demande
+            </>
+          ) : (
+            <>
+              <Lock className="h-4 w-4" />
+              Fenêtre fermée
+            </>
+          )}
         </Button>
       </div>
 
@@ -204,7 +222,7 @@ export function DemandesManager({ locationId }: DemandesManagerProps) {
               <CardContent className="flex flex-col items-center justify-center py-12">
                 <Package className="h-16 w-16 text-muted-foreground/30 mb-4" />
                 <p className="text-muted-foreground">Aucune demande trouvée</p>
-                {activeTab === "en_attente" && (
+                {activeTab === "en_attente" && submissionWindow.isOpen && (
                   <Button 
                     variant="outline" 
                     className="mt-4 gap-2"
