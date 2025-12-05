@@ -124,7 +124,7 @@ export default function Index() {
 
             {/* Widgets Dashboard */}
             <div className="mb-12">
-              <DashboardWidgets locationId={locationId} />
+              <DashboardWidgets locationId={locationId} isAdmin={isAdmin} />
             </div>
 
             {/* Cartes des modules */}

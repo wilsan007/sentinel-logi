@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { AlertTriangle, Clock, Package, TrendingUp, PackageX } from "lucide-react";
+import { AlertTriangle, Clock, Package, TrendingUp, PackageX, Bell } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface DashboardWidgetsProps {
   locationId?: string;
+  isAdmin?: boolean;
 }
 
 type LowStockItem = {
@@ -17,16 +19,18 @@ type LowStockItem = {
   item_subtype: string;
 };
 
-export const DashboardWidgets = ({ locationId }: DashboardWidgetsProps) => {
+export const DashboardWidgets = ({ locationId, isAdmin }: DashboardWidgetsProps) => {
+  const navigate = useNavigate();
   const [overdueLoans, setOverdueLoans] = useState<any[]>([]);
   const [expiringBatches, setExpiringBatches] = useState<any[]>([]);
   const [suspiciousActivities, setSuspiciousActivities] = useState<any[]>([]);
   const [consumptionData, setConsumptionData] = useState<any[]>([]);
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
+  const [pendingAccessRequests, setPendingAccessRequests] = useState<number>(0);
 
   useEffect(() => {
     loadDashboardData();
-  }, [locationId]);
+  }, [locationId, isAdmin]);
 
   const loadDashboardData = async () => {
     // Prêts en retard
@@ -55,6 +59,15 @@ export const DashboardWidgets = ({ locationId }: DashboardWidgetsProps) => {
       p_location_id: locationId || null
     });
     if (consumption) setConsumptionData(consumption);
+
+    // Demandes d'accès exceptionnel en attente (admin only)
+    if (isAdmin) {
+      const { count } = await supabase
+        .from('exceptional_access_requests')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      setPendingAccessRequests(count || 0);
+    }
 
     // Stock faible - items en dessous du seuil d'alerte ou à zéro
     let query = supabase
@@ -95,6 +108,33 @@ export const DashboardWidgets = ({ locationId }: DashboardWidgetsProps) => {
 
   return (
     <div className="space-y-4">
+      {/* Widget Notification Admin - Demandes d'accès */}
+      {isAdmin && pendingAccessRequests > 0 && (
+        <Card 
+          className="glass border-purple-500/50 bg-purple-500/10 cursor-pointer hover:bg-purple-500/20 transition-colors animate-pulse"
+          onClick={() => navigate('/procurement')}
+        >
+          <CardContent className="flex items-center justify-between py-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-purple-500/20">
+                <Bell className="h-5 w-5 text-purple-500" />
+              </div>
+              <div>
+                <p className="font-semibold text-purple-500">
+                  {pendingAccessRequests} demande{pendingAccessRequests > 1 ? 's' : ''} d'accès exceptionnel en attente
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Cliquez pour voir et traiter les demandes
+                </p>
+              </div>
+            </div>
+            <Badge variant="outline" className="border-purple-500 text-purple-500 animate-bounce">
+              Action requise
+            </Badge>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {/* Stock Critique */}
         <Card className="glass border-red-500/30 bg-red-500/5">
