@@ -3,13 +3,14 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Loader2, Shield, Package, Users, LogOut, ShoppingCart, Clock } from "lucide-react";
+import { Loader2, Shield, Package, Users, LogOut, ShoppingCart, Clock, ClipboardList } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 
 export default function Index() {
   const [user, setUser] = useState<User | null>(null);
   const [locationId, setLocationId] = useState<string>("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -21,16 +22,17 @@ export default function Index() {
       if (!session) {
         navigate("/auth");
       } else {
-        // Charger le location_id de l'utilisateur
+        // Charger le location_id et le rôle de l'utilisateur
         const { data: roleData } = await supabase
           .from("user_roles")
-          .select("location_id")
+          .select("location_id, role")
           .eq("user_id", session.user.id)
           .single();
         
         if (roleData?.location_id) {
           setLocationId(roleData.location_id);
         }
+        setIsAdmin(roleData?.role === "admin_central");
       }
       setLoading(false);
     });
@@ -228,39 +230,74 @@ export default function Index() {
                 </div>
               </div>
 
-              {/* Module Procurement */}
-              <div 
-                onClick={() => navigate("/procurement")}
-                className="glass-hover rounded-2xl p-8 border border-emerald-500/30 group cursor-pointer"
-              >
-                <div className="flex items-center gap-4 mb-4">
-                  <div className="p-4 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
-                    <ShoppingCart className="h-8 w-8 text-emerald-500" />
+              {/* Module Procurement (Admin) / Demandes (Chef de Camp) */}
+              {isAdmin ? (
+                <div 
+                  onClick={() => navigate("/procurement")}
+                  className="glass-hover rounded-2xl p-8 border border-emerald-500/30 group cursor-pointer"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="p-4 rounded-xl bg-emerald-500/10 group-hover:bg-emerald-500/20 transition-colors">
+                      <ShoppingCart className="h-8 w-8 text-emerald-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-emerald-500">
+                        Procurement
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Stock Central uniquement
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-emerald-500">
-                      Procurement
-                    </h3>
-                    <p className="text-sm text-muted-foreground">
-                      Commandes fournisseurs
-                    </p>
+                  <p className="text-muted-foreground mb-6">
+                    Commandez auprès des fournisseurs et redistribuez aux camps selon leurs demandes.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs">
+                      Commandes
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs">
+                      Fournisseurs
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs">
+                      Redistribution
+                    </span>
                   </div>
                 </div>
-                <p className="text-muted-foreground mb-6">
-                  Gérez le processus d'approvisionnement de bout en bout avec suivi des fournisseurs.
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs">
-                    Commandes
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs">
-                    Fournisseurs
-                  </span>
-                  <span className="px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-500 text-xs">
-                    Suivi
-                  </span>
+              ) : (
+                <div 
+                  onClick={() => navigate("/demandes")}
+                  className="glass-hover rounded-2xl p-8 border border-purple-500/30 group cursor-pointer"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="p-4 rounded-xl bg-purple-500/10 group-hover:bg-purple-500/20 transition-colors">
+                      <ClipboardList className="h-8 w-8 text-purple-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-purple-500">
+                        Demandes
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Besoins au Stock Central
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground mb-6">
+                    Exprimez vos besoins en équipement et provisions au Stock Central pour approvisionnement.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-500 text-xs">
+                      Demandes
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-500 text-xs">
+                      Suivi
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-purple-500/10 text-purple-500 text-xs">
+                      Historique
+                    </span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {/* Module Loans */}
               <div 

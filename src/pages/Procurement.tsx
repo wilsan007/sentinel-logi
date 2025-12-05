@@ -2,27 +2,15 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ShoppingCart, ArrowLeft, Building2 } from "lucide-react";
 import { ProcurementManager } from "@/components/procurement/ProcurementManager";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-interface Location {
-  id: string;
-  nom: string;
-  code: string;
-}
 
 export default function Procurement() {
   const [user, setUser] = useState<any>(null);
-  const [locationId, setLocationId] = useState<string>("");
-  const [locations, setLocations] = useState<Location[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const [stockCentralId, setStockCentralId] = useState<string>("");
+  const [stockCentralName, setStockCentralName] = useState<string>("Stock Central");
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -41,34 +29,49 @@ export default function Procurement() {
         .maybeSingle();
       
       const userIsAdmin = roleData?.role === "admin_central";
-      setIsAdmin(userIsAdmin);
       
-      // Only admin_central can access Procurement
+      // Only admin_central can access Procurement - redirect others to Demandes
       if (!userIsAdmin) {
-        navigate("/");
+        navigate("/demandes");
         return;
       }
       
-      // Load all locations for admin - Stock Central is the only one that can procure
-      const { data: locationsData } = await supabase
+      // Find Stock Central - the only location for procurement
+      const { data: stockCentral } = await supabase
         .from("locations")
         .select("id, nom, code")
-        .order("nom");
+        .eq("code", "STOCK_CENTRAL")
+        .single();
       
-      if (locationsData && locationsData.length > 0) {
-        setLocations(locationsData);
-        // Always default to Stock Central for procurement
-        const stockCentral = locationsData.find(l => l.code === "STOCK_CENTRAL");
-        if (stockCentral) {
-          setLocationId(stockCentral.id);
-        } else {
-          // If no Stock Central, use first location
-          setLocationId(locationsData[0].id);
+      if (stockCentral) {
+        setStockCentralId(stockCentral.id);
+        setStockCentralName(stockCentral.nom);
+      } else {
+        // Fallback: use first location if Stock Central doesn't exist
+        const { data: firstLocation } = await supabase
+          .from("locations")
+          .select("id, nom")
+          .limit(1)
+          .single();
+        
+        if (firstLocation) {
+          setStockCentralId(firstLocation.id);
+          setStockCentralName(firstLocation.nom);
         }
       }
+      
+      setLoading(false);
     };
     loadUserData();
   }, [navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen relative overflow-hidden">
@@ -95,20 +98,11 @@ export default function Procurement() {
                 </div>
               </div>
               <div className="flex items-center gap-4">
-                {isAdmin && locations.length > 0 && (
-                  <Select value={locationId} onValueChange={setLocationId}>
-                    <SelectTrigger className="w-[220px] glass border-emerald-500/30">
-                      <SelectValue placeholder="Sélectionner un camp" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {locations.map((loc) => (
-                        <SelectItem key={loc.id} value={loc.id}>
-                          {loc.nom} ({loc.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                {/* Fixed location indicator - Stock Central only */}
+                <Badge variant="outline" className="px-4 py-2 border-emerald-500/30 gap-2">
+                  <Building2 className="h-4 w-4 text-emerald-500" />
+                  <span className="text-emerald-500 font-medium">{stockCentralName}</span>
+                </Badge>
                 <span className="text-sm text-muted-foreground">{user?.email}</span>
               </div>
             </div>
@@ -116,13 +110,13 @@ export default function Procurement() {
         </header>
 
         <main className="container mx-auto px-4 py-8">
-          {locationId ? (
-            <ProcurementManager locationId={locationId} />
+          {stockCentralId ? (
+            <ProcurementManager locationId={stockCentralId} />
           ) : (
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <ShoppingCart className="h-16 w-16 mx-auto mb-4 text-emerald-500/30" />
-                <p className="text-muted-foreground">Chargement...</p>
+                <p className="text-muted-foreground">Stock Central non trouvé</p>
               </div>
             </div>
           )}
