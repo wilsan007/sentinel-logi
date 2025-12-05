@@ -116,6 +116,86 @@ export const SupplierSelector = ({ selectedSupplierId, onSupplierSelect, readOnl
     );
   }
 
+  // In readOnly mode, only show the selected supplier
+  const selectedSupplier = suppliers.find(s => s.id === selectedSupplierId);
+
+  if (readOnly) {
+    if (!selectedSupplier) {
+      return (
+        <div className="text-center py-4 text-muted-foreground">
+          Aucun fournisseur sélectionné
+        </div>
+      );
+    }
+
+    const ratingConfig = RATING_CONFIG[selectedSupplier.rating || "AVERAGE"];
+    const RatingIcon = ratingConfig.icon;
+    const score = calculateScore(selectedSupplier);
+
+    return (
+      <Card className="glass border-emerald-500/30 bg-emerald-500/5">
+        <CardContent className="p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold">{selectedSupplier.name}</span>
+                <Badge variant="outline" className="text-xs font-mono">
+                  {selectedSupplier.code}
+                </Badge>
+              </div>
+              {selectedSupplier.country && (
+                <p className="text-sm text-muted-foreground mt-1 flex items-center gap-1">
+                  <Globe className="h-3 w-3" />
+                  {selectedSupplier.country}
+                </p>
+              )}
+            </div>
+            <div className="text-right">
+              <div className="text-2xl font-bold text-emerald-500">{score}</div>
+              <div className="text-xs text-muted-foreground">Score</div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-border/50">
+            <div className="flex items-center gap-2">
+              <div className={`p-1.5 rounded-lg ${ratingConfig.bgColor}`}>
+                <RatingIcon className={`h-3.5 w-3.5 ${ratingConfig.color}`} />
+              </div>
+              <Badge className={`${ratingConfig.bgColor} ${ratingConfig.color} border-0 text-xs`}>
+                {ratingConfig.label}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-muted">
+                <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">{selectedSupplier.avg_delivery_days || "N/A"} j</p>
+                <p className="text-xs text-muted-foreground">Délai moy.</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 rounded-lg bg-muted">
+                <TrendingUp className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">{selectedSupplier.on_time_delivery_rate || 0}%</p>
+                <p className="text-xs text-muted-foreground">À temps</p>
+              </div>
+            </div>
+          </div>
+
+          {selectedSupplier.total_orders_completed && selectedSupplier.total_orders_completed > 0 && (
+            <div className="mt-3 flex items-center gap-1 text-xs text-muted-foreground">
+              <Package className="h-3 w-3" />
+              <span>{selectedSupplier.total_orders_completed} commandes complétées</span>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <div className="space-y-4">
       {/* Search */}
