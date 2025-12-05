@@ -30,32 +30,40 @@ export default function Procurement() {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/auth");
-      } else {
-        setUser(session.user);
-        const { data: roleData } = await supabase
-          .from("user_roles")
-          .select("location_id, role")
-          .eq("user_id", session.user.id)
-          .maybeSingle();
-        
-        const userIsAdmin = roleData?.role === "admin_central";
-        setIsAdmin(userIsAdmin);
-        
-        if (userIsAdmin) {
-          // Load all locations for admin
-          const { data: locationsData } = await supabase
-            .from("locations")
-            .select("id, nom, code")
-            .order("nom");
-          
-          if (locationsData && locationsData.length > 0) {
-            setLocations(locationsData);
-            // Default to Stock Central or first location
-            const stockCentral = locationsData.find(l => l.code === "STOCK_CENTRAL");
-            setLocationId(stockCentral?.id || roleData?.location_id || locationsData[0].id);
-          }
-        } else if (roleData?.location_id) {
-          setLocationId(roleData.location_id);
+        return;
+      }
+      
+      setUser(session.user);
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("location_id, role")
+        .eq("user_id", session.user.id)
+        .maybeSingle();
+      
+      const userIsAdmin = roleData?.role === "admin_central";
+      setIsAdmin(userIsAdmin);
+      
+      // Only admin_central can access Procurement
+      if (!userIsAdmin) {
+        navigate("/");
+        return;
+      }
+      
+      // Load all locations for admin - Stock Central is the only one that can procure
+      const { data: locationsData } = await supabase
+        .from("locations")
+        .select("id, nom, code")
+        .order("nom");
+      
+      if (locationsData && locationsData.length > 0) {
+        setLocations(locationsData);
+        // Always default to Stock Central for procurement
+        const stockCentral = locationsData.find(l => l.code === "STOCK_CENTRAL");
+        if (stockCentral) {
+          setLocationId(stockCentral.id);
+        } else {
+          // If no Stock Central, use first location
+          setLocationId(locationsData[0].id);
         }
       }
     };
