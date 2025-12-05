@@ -792,6 +792,50 @@ export type Database = {
           },
         ]
       }
+      procurement_stage_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          id: string
+          new_stage: Database["public"]["Enums"]["procurement_stage"]
+          notes: string | null
+          order_id: string
+          previous_stage:
+            | Database["public"]["Enums"]["procurement_stage"]
+            | null
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_stage: Database["public"]["Enums"]["procurement_stage"]
+          notes?: string | null
+          order_id: string
+          previous_stage?:
+            | Database["public"]["Enums"]["procurement_stage"]
+            | null
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          id?: string
+          new_stage?: Database["public"]["Enums"]["procurement_stage"]
+          notes?: string | null
+          order_id?: string
+          previous_stage?:
+            | Database["public"]["Enums"]["procurement_stage"]
+            | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_stage_history_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
