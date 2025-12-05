@@ -4,10 +4,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, ArrowLeft } from "lucide-react";
 import { ProcurementManager } from "@/components/procurement/ProcurementManager";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+interface Location {
+  id: string;
+  nom: string;
+  code: string;
+}
 
 export default function Procurement() {
   const [user, setUser] = useState<any>(null);
   const [locationId, setLocationId] = useState<string>("");
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,10 +34,29 @@ export default function Procurement() {
         setUser(session.user);
         const { data: roleData } = await supabase
           .from("user_roles")
-          .select("location_id")
+          .select("location_id, role")
           .eq("user_id", session.user.id)
           .maybeSingle();
-        if (roleData?.location_id) setLocationId(roleData.location_id);
+        
+        const userIsAdmin = roleData?.role === "admin_central";
+        setIsAdmin(userIsAdmin);
+        
+        if (userIsAdmin) {
+          // Load all locations for admin
+          const { data: locationsData } = await supabase
+            .from("locations")
+            .select("id, nom, code")
+            .order("nom");
+          
+          if (locationsData && locationsData.length > 0) {
+            setLocations(locationsData);
+            // Default to Stock Central or first location
+            const stockCentral = locationsData.find(l => l.code === "STOCK_CENTRAL");
+            setLocationId(stockCentral?.id || roleData?.location_id || locationsData[0].id);
+          }
+        } else if (roleData?.location_id) {
+          setLocationId(roleData.location_id);
+        }
       }
     };
     loadUserData();
@@ -52,13 +86,38 @@ export default function Procurement() {
                   </div>
                 </div>
               </div>
-              <span className="text-sm text-muted-foreground">{user?.email}</span>
+              <div className="flex items-center gap-4">
+                {isAdmin && locations.length > 0 && (
+                  <Select value={locationId} onValueChange={setLocationId}>
+                    <SelectTrigger className="w-[220px] glass border-emerald-500/30">
+                      <SelectValue placeholder="Sélectionner un camp" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {locations.map((loc) => (
+                        <SelectItem key={loc.id} value={loc.id}>
+                          {loc.nom} ({loc.code})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                <span className="text-sm text-muted-foreground">{user?.email}</span>
+              </div>
             </div>
           </div>
         </header>
 
         <main className="container mx-auto px-4 py-8">
-          {locationId && <ProcurementManager locationId={locationId} />}
+          {locationId ? (
+            <ProcurementManager locationId={locationId} />
+          ) : (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <ShoppingCart className="h-16 w-16 mx-auto mb-4 text-emerald-500/30" />
+                <p className="text-muted-foreground">Chargement...</p>
+              </div>
+            </div>
+          )}
         </main>
       </div>
     </div>
