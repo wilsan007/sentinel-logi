@@ -58,7 +58,7 @@ export function DemandesManager({ locationId }: DemandesManagerProps) {
   const [activeTab, setActiveTab] = useState("en_attente");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const { toast } = useToast();
-  const submissionWindow = useSubmissionWindow();
+  const submissionWindow = useSubmissionWindow(locationId);
 
   useEffect(() => {
     loadDemandes();
@@ -115,7 +115,7 @@ export function DemandesManager({ locationId }: DemandesManagerProps) {
   return (
     <div className="space-y-6">
       {/* Submission Window Banner */}
-      <SubmissionWindowBanner />
+      <SubmissionWindowBanner locationId={locationId} />
 
       {/* Stats Cards */}
       <div className="grid grid-cols-4 gap-4">

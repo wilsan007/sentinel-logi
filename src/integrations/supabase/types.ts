@@ -129,6 +129,54 @@ export type Database = {
         }
         Relationships: []
       }
+      exceptional_submission_access: {
+        Row: {
+          created_at: string
+          granted_by: string
+          id: string
+          is_active: boolean | null
+          location_id: string
+          reason: string
+          valid_from: string
+          valid_until: string
+        }
+        Insert: {
+          created_at?: string
+          granted_by: string
+          id?: string
+          is_active?: boolean | null
+          location_id: string
+          reason: string
+          valid_from?: string
+          valid_until: string
+        }
+        Update: {
+          created_at?: string
+          granted_by?: string
+          id?: string
+          is_active?: boolean | null
+          location_id?: string
+          reason?: string
+          valid_from?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "exceptional_submission_access_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "exceptional_submission_access_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "view_camp_consumption_rate"
+            referencedColumns: ["location_id"]
+          },
+        ]
+      }
       inventory_batches: {
         Row: {
           arrival_date: string
