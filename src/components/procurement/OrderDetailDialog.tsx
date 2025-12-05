@@ -286,6 +286,28 @@ export const OrderDetailDialog = ({
             currentStage={order?.stage} 
             onStageChange={isReadOnly ? undefined : handleStageChange}
             isNationalSupplier={isNationalSupplier}
+            onStageClick={(stage) => {
+              // Navigate to appropriate tab based on clicked stage
+              const stageToTabMap: Record<string, string> = {
+                DRAFT: "general",
+                QUOTE_REQUEST: "quotes",
+                QUOTE_SELECTION: "supplier",
+                INVOICE_RECEIVED: "payment",
+                DELIVERY_PENDING: "verification",
+                VERIFICATION: "verification",
+                PAYMENT_ORDER: "payment",
+                PAYMENT_TRACKING: "payment",
+                PAID: "payment",
+                SUPPLIER_SELECTION: "supplier",
+                ORDER_PLACED: "items",
+                PAYMENT_VERIFIED: "payment",
+                IN_TRANSIT: "general",
+                CUSTOMS_ENTRY: "general",
+                RECEIVED: "verification",
+              };
+              const tab = stageToTabMap[stage] || "general";
+              setActiveTab(tab);
+            }}
           />
         </div>
 
@@ -314,9 +336,9 @@ export const OrderDetailDialog = ({
                 <FileText className="h-4 w-4" />
                 Général
               </TabsTrigger>
-              <TabsTrigger value="supplier" className="gap-2 data-[state=active]:text-emerald-500">
-                <Building2 className="h-4 w-4" />
-                Fournisseur
+              <TabsTrigger value="items" className="gap-2 data-[state=active]:text-emerald-500">
+                <Package className="h-4 w-4" />
+                Articles
               </TabsTrigger>
               {isNationalSupplier && (
                 <TabsTrigger value="quotes" className="gap-2 data-[state=active]:text-emerald-500">
@@ -324,13 +346,13 @@ export const OrderDetailDialog = ({
                   Devis
                 </TabsTrigger>
               )}
-              <TabsTrigger value="items" className="gap-2 data-[state=active]:text-emerald-500">
-                <Package className="h-4 w-4" />
-                Articles
+              <TabsTrigger value="supplier" className="gap-2 data-[state=active]:text-emerald-500">
+                <Building2 className="h-4 w-4" />
+                Fournisseur sélectionné
               </TabsTrigger>
               <TabsTrigger value="verification" className="gap-2 data-[state=active]:text-emerald-500">
                 <ClipboardCheck className="h-4 w-4" />
-                Vérification
+                Réception & Vérification
               </TabsTrigger>
               <TabsTrigger value="payment" className="gap-2 data-[state=active]:text-emerald-500">
                 {isNationalSupplier ? <Landmark className="h-4 w-4" /> : <DollarSign className="h-4 w-4" />}

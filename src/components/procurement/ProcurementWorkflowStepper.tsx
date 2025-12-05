@@ -41,6 +41,7 @@ interface ProcurementWorkflowStepperProps {
   currentStage: ProcurementStage;
   onStageChange?: (stage: ProcurementStage) => void;
   isNationalSupplier?: boolean;
+  onStageClick?: (stage: ProcurementStage) => void;
 }
 
 // Stages for INTERNATIONAL supplier workflow
@@ -77,6 +78,7 @@ export const ProcurementWorkflowStepper = ({
   currentStage,
   onStageChange,
   isNationalSupplier = false,
+  onStageClick,
 }: ProcurementWorkflowStepperProps) => {
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
@@ -150,10 +152,15 @@ export const ProcurementWorkflowStepper = ({
             const Icon = stage.icon;
             const isActive = index === currentIndex;
             const isComplete = index < currentIndex;
-            const isFuture = index > currentIndex;
+            const isClickable = (isComplete || isActive) && onStageClick;
 
             return (
-              <div key={stage.key} className="flex flex-col items-center relative z-10 px-1">
+              <div 
+                key={stage.key} 
+                className={`flex flex-col items-center relative z-10 px-1 ${isClickable ? "cursor-pointer group" : ""}`}
+                onClick={() => isClickable && onStageClick(stage.key)}
+                title={isClickable ? `Voir les détails: ${stage.label}` : undefined}
+              >
                 <motion.div
                   initial={false}
                   animate={{
@@ -169,7 +176,7 @@ export const ProcurementWorkflowStepper = ({
                         : isActive
                         ? "bg-emerald-500/10 border-emerald-500 text-emerald-500"
                         : "bg-muted border-muted text-muted-foreground"
-                    }`}
+                    } ${isClickable ? "group-hover:ring-2 group-hover:ring-emerald-500/50 group-hover:ring-offset-2 group-hover:ring-offset-background" : ""}`}
                   >
                     {isComplete ? (
                       <CheckCircle className="h-5 w-5" />
@@ -192,7 +199,7 @@ export const ProcurementWorkflowStepper = ({
                 <span
                   className={`text-xs mt-2 font-medium whitespace-nowrap transition-colors ${
                     isActive ? "text-emerald-500" : isComplete ? "text-foreground" : "text-muted-foreground"
-                  } ${isCancelled ? "opacity-40" : ""}`}
+                  } ${isCancelled ? "opacity-40" : ""} ${isClickable ? "group-hover:text-emerald-400" : ""}`}
                 >
                   {stage.shortLabel}
                 </span>
