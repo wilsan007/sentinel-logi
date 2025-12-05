@@ -22,7 +22,8 @@ type SupplierRating = Database["public"]["Enums"]["supplier_rating"];
 
 interface SupplierSelectorProps {
   selectedSupplierId: string;
-  onSupplierSelect: (supplierId: string) => void;
+  onSupplierSelect?: (supplierId: string) => void;
+  readOnly?: boolean;
 }
 
 interface Supplier {
@@ -73,7 +74,7 @@ const calculateScore = (supplier: Supplier): number => {
   return Math.round(score);
 };
 
-export const SupplierSelector = ({ selectedSupplierId, onSupplierSelect }: SupplierSelectorProps) => {
+export const SupplierSelector = ({ selectedSupplierId, onSupplierSelect, readOnly }: SupplierSelectorProps) => {
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -167,14 +168,16 @@ export const SupplierSelector = ({ selectedSupplierId, onSupplierSelect }: Suppl
                 layout
               >
                 <Card
-                  className={`glass cursor-pointer transition-all duration-200 ${
+                  className={`glass transition-all duration-200 ${
+                    readOnly ? "" : "cursor-pointer"
+                  } ${
                     isSelected
                       ? "border-emerald-500 bg-emerald-500/10 ring-2 ring-emerald-500/30"
-                      : isBest
+                      : isBest && !readOnly
                       ? "border-emerald-500/50 hover:border-emerald-500"
                       : "border-border/50 hover:border-border"
                   }`}
-                  onClick={() => onSupplierSelect(supplier.id)}
+                  onClick={() => !readOnly && onSupplierSelect?.(supplier.id)}
                 >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between">

@@ -83,6 +83,9 @@ export const OrderDetailDialog = ({
   const [receiveDialogOpen, setReceiveDialogOpen] = useState(false);
   const { toast } = useToast();
 
+  // Check if order is in a final state (read-only)
+  const isReadOnly = order?.stage === "RECEIVED" || order?.stage === "CANCELLED";
+
   // Form state
   const [formData, setFormData] = useState({
     order_number: "",
@@ -258,9 +261,25 @@ export const OrderDetailDialog = ({
         <div className="py-4">
           <ProcurementWorkflowStepper 
             currentStage={order?.stage} 
-            onStageChange={handleStageChange}
+            onStageChange={isReadOnly ? undefined : handleStageChange}
           />
         </div>
+
+        {/* Read-only banner */}
+        {isReadOnly && (
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-lg mb-4 ${
+            order?.stage === "RECEIVED" 
+              ? "bg-green-500/10 border border-green-500/30 text-green-500" 
+              : "bg-red-500/10 border border-red-500/30 text-red-500"
+          }`}>
+            <PackageCheck className="h-4 w-4" />
+            <span className="text-sm font-medium">
+              {order?.stage === "RECEIVED" 
+                ? "Commande reçue et validée — Consultation uniquement" 
+                : "Commande annulée — Consultation uniquement"}
+            </span>
+          </div>
+        )}
 
         <div className="flex-1 overflow-y-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -342,7 +361,8 @@ export const OrderDetailDialog = ({
                       <Input
                         value={formData.order_number}
                         onChange={(e) => setFormData({ ...formData, order_number: e.target.value })}
-                        className="glass border-border/50 focus:border-emerald-500/50"
+                        disabled={isReadOnly}
+                        className="glass border-border/50 focus:border-emerald-500/50 disabled:opacity-60"
                       />
                     </div>
                     <div className="space-y-2">
@@ -350,8 +370,9 @@ export const OrderDetailDialog = ({
                       <Select
                         value={formData.transport_mode}
                         onValueChange={(value) => setFormData({ ...formData, transport_mode: value as TransportMode })}
+                        disabled={isReadOnly}
                       >
-                        <SelectTrigger className="glass border-border/50">
+                        <SelectTrigger className="glass border-border/50 disabled:opacity-60">
                           <SelectValue placeholder="Sélectionner..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -368,7 +389,8 @@ export const OrderDetailDialog = ({
                         type="date"
                         value={formData.expected_delivery_date}
                         onChange={(e) => setFormData({ ...formData, expected_delivery_date: e.target.value })}
-                        className="glass border-border/50 focus:border-emerald-500/50"
+                        disabled={isReadOnly}
+                        className="glass border-border/50 focus:border-emerald-500/50 disabled:opacity-60"
                       />
                     </div>
                     <div className="space-y-2">
@@ -377,7 +399,8 @@ export const OrderDetailDialog = ({
                         value={formData.tracking_number}
                         onChange={(e) => setFormData({ ...formData, tracking_number: e.target.value })}
                         placeholder="Tracking number..."
-                        className="glass border-border/50 focus:border-emerald-500/50"
+                        disabled={isReadOnly}
+                        className="glass border-border/50 focus:border-emerald-500/50 disabled:opacity-60"
                       />
                     </div>
                     <div className="space-y-2">
@@ -386,7 +409,8 @@ export const OrderDetailDialog = ({
                         value={formData.port_of_entry}
                         onChange={(e) => setFormData({ ...formData, port_of_entry: e.target.value })}
                         placeholder="Ex: Douala, Kribi..."
-                        className="glass border-border/50 focus:border-emerald-500/50"
+                        disabled={isReadOnly}
+                        className="glass border-border/50 focus:border-emerald-500/50 disabled:opacity-60"
                       />
                     </div>
                     <div className="space-y-2">
@@ -394,8 +418,9 @@ export const OrderDetailDialog = ({
                       <Select
                         value={formData.currency}
                         onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                        disabled={isReadOnly}
                       >
-                        <SelectTrigger className="glass border-border/50">
+                        <SelectTrigger className="glass border-border/50 disabled:opacity-60">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -413,7 +438,8 @@ export const OrderDetailDialog = ({
                       value={formData.notes}
                       onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                       placeholder="Notes additionnelles, instructions spéciales..."
-                      className="glass border-border/50 min-h-[100px] focus:border-emerald-500/50"
+                      disabled={isReadOnly}
+                      className="glass border-border/50 min-h-[100px] focus:border-emerald-500/50 disabled:opacity-60"
                     />
                   </div>
                 </TabsContent>
@@ -421,7 +447,8 @@ export const OrderDetailDialog = ({
                 <TabsContent value="supplier" className="mt-4">
                   <SupplierSelector
                     selectedSupplierId={formData.supplier_id}
-                    onSupplierSelect={(id) => setFormData({ ...formData, supplier_id: id })}
+                    onSupplierSelect={isReadOnly ? undefined : (id) => setFormData({ ...formData, supplier_id: id })}
+                    readOnly={isReadOnly}
                   />
                 </TabsContent>
 
@@ -432,6 +459,7 @@ export const OrderDetailDialog = ({
                     onTotalChange={(total) => {
                       setOrder((prev: any) => prev ? { ...prev, total_amount: total } : prev);
                     }}
+                    readOnly={isReadOnly}
                   />
                 </TabsContent>
 
@@ -443,7 +471,8 @@ export const OrderDetailDialog = ({
                         value={formData.payment_reference}
                         onChange={(e) => setFormData({ ...formData, payment_reference: e.target.value })}
                         placeholder="Numéro de virement, chèque..."
-                        className="glass border-border/50 focus:border-emerald-500/50"
+                        disabled={isReadOnly}
+                        className="glass border-border/50 focus:border-emerald-500/50 disabled:opacity-60"
                       />
                     </div>
                     <div className="space-y-2">
@@ -521,20 +550,23 @@ export const OrderDetailDialog = ({
             </Button>
           )}
           
-          <Button
-            onClick={handleSave}
-            disabled={saving}
-            className="bg-emerald-500 hover:bg-emerald-600 text-white"
-          >
-            {saving ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Enregistrement...
-              </>
-            ) : (
-              "Enregistrer les modifications"
-            )}
-          </Button>
+          {/* Only show save button if not read-only */}
+          {!isReadOnly && (
+            <Button
+              onClick={handleSave}
+              disabled={saving}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white"
+            >
+              {saving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                "Enregistrer les modifications"
+              )}
+            </Button>
+          )}
         </div>
 
         {/* Receive Order Dialog */}
