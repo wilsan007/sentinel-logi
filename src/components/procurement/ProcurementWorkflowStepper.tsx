@@ -116,9 +116,13 @@ export const ProcurementWorkflowStepper = ({
   const currentIndex = getStageIndex(currentStage, STAGES);
   const isCancelled = currentStage === "CANCELLED";
   const isCompleted = currentStage === "RECEIVED" || currentStage === "PAID";
+  
+  // Check if current stage is valid for the workflow
+  const isStageValidForWorkflow = STAGES.some(s => s.key === currentStage) || isCancelled || isCompleted;
 
   const handleAdvance = () => {
     if (currentIndex < STAGES.length - 1 && !isCancelled && !isCompleted && onStageChange) {
+      // Always use the next stage from the correct workflow
       const nextStage = STAGES[currentIndex + 1].key;
       setConfirmDialog({ open: true, stage: nextStage, action: "advance" });
     }
@@ -139,9 +143,6 @@ export const ProcurementWorkflowStepper = ({
 
   const nextStage = currentIndex >= 0 && currentIndex < STAGES.length - 1 ? STAGES[currentIndex + 1] : null;
 
-  // Handle case when stage doesn't exist in current workflow
-  const isStageInWorkflow = currentIndex !== -1 || isCancelled || isCompleted;
-
   return (
     <div className="space-y-4">
       {/* Workflow Type Indicator */}
@@ -158,6 +159,18 @@ export const ProcurementWorkflowStepper = ({
           </>
         )}
       </div>
+
+      {/* Warning for workflow mismatch */}
+      {!isStageValidForWorkflow && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-500 text-sm"
+        >
+          <AlertTriangle className="h-4 w-4 flex-shrink-0" />
+          <span>L'étape actuelle ne correspond pas au workflow. Passez à l'étape suivante pour synchroniser.</span>
+        </motion.div>
+      )}
 
       {/* Stepper */}
       <div className="relative px-2 overflow-x-auto pb-2">
