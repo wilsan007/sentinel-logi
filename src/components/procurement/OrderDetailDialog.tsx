@@ -21,13 +21,16 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Package, Truck, FileText, DollarSign, Building2, Calendar, MapPin, Hash, PackageCheck } from "lucide-react";
+import { Loader2, Package, Truck, FileText, DollarSign, Building2, Calendar, MapPin, Hash, PackageCheck, ClipboardCheck, Receipt, Landmark } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { SupplierSelector } from "./SupplierSelector";
 import { OrderItemsManager } from "./OrderItemsManager";
 import { ProcurementWorkflowStepper } from "./ProcurementWorkflowStepper";
 import { ReceiveOrderDialog } from "./ReceiveOrderDialog";
+import { QuotesManager } from "./QuotesManager";
+import { VerificationManager } from "./VerificationManager";
+import { NationalPaymentTracking } from "./NationalPaymentTracking";
 import type { Database } from "@/integrations/supabase/types";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -48,6 +51,14 @@ const STAGE_LABELS: Record<string, string> = {
   PAYMENT_VERIFIED: "Paiement vérifié",
   IN_TRANSIT: "En transit",
   CUSTOMS_ENTRY: "En douane",
+  QUOTE_REQUEST: "Demande de devis",
+  QUOTE_SELECTION: "Sélection devis",
+  INVOICE_RECEIVED: "Facture reçue",
+  DELIVERY_PENDING: "En attente livraison",
+  VERIFICATION: "Vérification",
+  PAYMENT_ORDER: "Bon de commande",
+  PAYMENT_TRACKING: "Bordereau paiement",
+  PAID: "Payé",
   RECEIVED: "Reçu",
   CANCELLED: "Annulé"
 };
@@ -59,6 +70,14 @@ const STAGE_COLORS: Record<string, string> = {
   PAYMENT_VERIFIED: "bg-emerald-500/20 text-emerald-500",
   IN_TRANSIT: "bg-amber-500/20 text-amber-500",
   CUSTOMS_ENTRY: "bg-orange-500/20 text-orange-500",
+  QUOTE_REQUEST: "bg-blue-500/20 text-blue-500",
+  QUOTE_SELECTION: "bg-cyan-500/20 text-cyan-500",
+  INVOICE_RECEIVED: "bg-teal-500/20 text-teal-500",
+  DELIVERY_PENDING: "bg-amber-500/20 text-amber-500",
+  VERIFICATION: "bg-purple-500/20 text-purple-500",
+  PAYMENT_ORDER: "bg-orange-500/20 text-orange-500",
+  PAYMENT_TRACKING: "bg-emerald-500/20 text-emerald-500",
+  PAID: "bg-green-500/20 text-green-500",
   RECEIVED: "bg-green-500/20 text-green-500",
   CANCELLED: "bg-red-500/20 text-red-500"
 };
@@ -84,7 +103,10 @@ export const OrderDetailDialog = ({
   const { toast } = useToast();
 
   // Check if order is in a final state (read-only)
-  const isReadOnly = order?.stage === "RECEIVED" || order?.stage === "CANCELLED";
+  const isReadOnly = order?.stage === "RECEIVED" || order?.stage === "PAID" || order?.stage === "CANCELLED";
+  
+  // Determine if supplier is national (Djibouti)
+  const isNationalSupplier = order?.suppliers?.country === "Djibouti";
 
   // Form state
   const [formData, setFormData] = useState({
@@ -96,7 +118,7 @@ export const OrderDetailDialog = ({
     port_of_entry: "",
     payment_reference: "",
     notes: "",
-    currency: "XAF",
+    currency: "DJF",
   });
 
   useEffect(() => {
@@ -130,7 +152,7 @@ export const OrderDetailDialog = ({
         port_of_entry: data.port_of_entry || "",
         payment_reference: data.payment_reference || "",
         notes: data.notes || "",
-        currency: data.currency || "XAF",
+        currency: data.currency || "DJF",
       });
     }
     setLoading(false);
@@ -185,7 +207,7 @@ export const OrderDetailDialog = ({
         updateData.payment_date = new Date().toISOString().split('T')[0];
       } else if (newStage === "CUSTOMS_ENTRY") {
         updateData.customs_entry_date = new Date().toISOString().split('T')[0];
-      } else if (newStage === "RECEIVED") {
+      } else if (newStage === "RECEIVED" || newStage === "PAID") {
         updateData.actual_delivery_date = new Date().toISOString().split('T')[0];
       }
 
@@ -243,7 +265,7 @@ export const OrderDetailDialog = ({
                 </div>
                 {order?.suppliers && (
                   <p className="text-sm text-muted-foreground font-normal">
-                    {order.suppliers.name} ({order.suppliers.code})
+                    {order.suppliers.name} ({order.suppliers.code}) • {order.suppliers.country || "Pays non spécifié"}
                   </p>
                 )}
               </div>
@@ -262,13 +284,14 @@ export const OrderDetailDialog = ({
           <ProcurementWorkflowStepper 
             currentStage={order?.stage} 
             onStageChange={isReadOnly ? undefined : handleStageChange}
+            isNationalSupplier={isNationalSupplier}
           />
         </div>
 
         {/* Read-only banner */}
         {isReadOnly && (
           <div className={`flex items-center gap-2 px-4 py-2 rounded-lg mb-4 ${
-            order?.stage === "RECEIVED" 
+            order?.stage === "RECEIVED" || order?.stage === "PAID"
               ? "bg-green-500/10 border border-green-500/30 text-green-500" 
               : "bg-red-500/10 border border-red-500/30 text-red-500"
           }`}>
@@ -276,6 +299,8 @@ export const OrderDetailDialog = ({
             <span className="text-sm font-medium">
               {order?.stage === "RECEIVED" 
                 ? "Commande reçue et validée — Consultation uniquement" 
+                : order?.stage === "PAID"
+                ? "Commande payée — Consultation uniquement"
                 : "Commande annulée — Consultation uniquement"}
             </span>
           </div>
@@ -283,7 +308,7 @@ export const OrderDetailDialog = ({
 
         <div className="flex-1 overflow-y-auto">
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="glass border border-border/50 w-full justify-start">
+            <TabsList className="glass border border-border/50 w-full justify-start flex-wrap">
               <TabsTrigger value="general" className="gap-2 data-[state=active]:text-emerald-500">
                 <FileText className="h-4 w-4" />
                 Général
@@ -292,12 +317,22 @@ export const OrderDetailDialog = ({
                 <Building2 className="h-4 w-4" />
                 Fournisseur
               </TabsTrigger>
+              {isNationalSupplier && (
+                <TabsTrigger value="quotes" className="gap-2 data-[state=active]:text-emerald-500">
+                  <Receipt className="h-4 w-4" />
+                  Devis
+                </TabsTrigger>
+              )}
               <TabsTrigger value="items" className="gap-2 data-[state=active]:text-emerald-500">
                 <Package className="h-4 w-4" />
                 Articles
               </TabsTrigger>
+              <TabsTrigger value="verification" className="gap-2 data-[state=active]:text-emerald-500">
+                <ClipboardCheck className="h-4 w-4" />
+                Vérification
+              </TabsTrigger>
               <TabsTrigger value="payment" className="gap-2 data-[state=active]:text-emerald-500">
-                <DollarSign className="h-4 w-4" />
+                {isNationalSupplier ? <Landmark className="h-4 w-4" /> : <DollarSign className="h-4 w-4" />}
                 Paiement
               </TabsTrigger>
             </TabsList>
@@ -408,7 +443,7 @@ export const OrderDetailDialog = ({
                       <Input
                         value={formData.port_of_entry}
                         onChange={(e) => setFormData({ ...formData, port_of_entry: e.target.value })}
-                        placeholder="Ex: Douala, Kribi..."
+                        placeholder="Ex: Port de Djibouti..."
                         disabled={isReadOnly}
                         className="glass border-border/50 focus:border-emerald-500/50 disabled:opacity-60"
                       />
@@ -424,10 +459,10 @@ export const OrderDetailDialog = ({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="XAF">XAF (FCFA)</SelectItem>
-                          <SelectItem value="EUR">EUR (Euro)</SelectItem>
-                          <SelectItem value="USD">USD (Dollar)</SelectItem>
                           <SelectItem value="DJF">DJF (Franc Djibouti)</SelectItem>
+                          <SelectItem value="USD">USD (Dollar)</SelectItem>
+                          <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                          <SelectItem value="XAF">XAF (FCFA)</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
@@ -452,6 +487,16 @@ export const OrderDetailDialog = ({
                   />
                 </TabsContent>
 
+                {isNationalSupplier && (
+                  <TabsContent value="quotes" className="mt-4">
+                    <QuotesManager
+                      orderId={orderId!}
+                      readOnly={isReadOnly}
+                      onQuoteSelected={() => loadOrder()}
+                    />
+                  </TabsContent>
+                )}
+
                 <TabsContent value="items" className="mt-4">
                   <OrderItemsManager 
                     orderId={orderId!} 
@@ -463,67 +508,96 @@ export const OrderDetailDialog = ({
                   />
                 </TabsContent>
 
-                <TabsContent value="payment" className="space-y-4 mt-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label>Référence de paiement</Label>
-                      <Input
-                        value={formData.payment_reference}
-                        onChange={(e) => setFormData({ ...formData, payment_reference: e.target.value })}
-                        placeholder="Numéro de virement, chèque..."
-                        disabled={isReadOnly}
-                        className="glass border-border/50 focus:border-emerald-500/50 disabled:opacity-60"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Date de paiement</Label>
-                      <Input
-                        type="date"
-                        value={order?.payment_date || ""}
-                        disabled
-                        className="glass border-border/50 opacity-50"
-                      />
-                      <p className="text-xs text-muted-foreground">Renseignée automatiquement à la validation du paiement</p>
-                    </div>
-                  </div>
-                  
-                  <Card className="glass border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-center">
-                        <div>
-                          <p className="text-lg font-medium">Montant Total à Payer</p>
-                          <p className="text-sm text-muted-foreground">TVA incluse</p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-4xl font-bold text-emerald-500">
-                            {order?.total_amount?.toLocaleString() || 0}
-                          </p>
-                          <p className="text-sm text-muted-foreground">{formData.currency}</p>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
+                <TabsContent value="verification" className="mt-4">
+                  <VerificationManager
+                    orderId={orderId!}
+                    verificationStatus={order?.verification_status || "PENDING"}
+                    verificationNotes={order?.verification_notes}
+                    readOnly={isReadOnly || !["VERIFICATION", "DELIVERY_PENDING", "CUSTOMS_ENTRY", "IN_TRANSIT"].includes(order?.stage)}
+                    onVerificationComplete={() => loadOrder()}
+                  />
+                </TabsContent>
 
-                  {/* Payment Timeline */}
-                  <Card className="glass border-border/50">
-                    <CardContent className="p-4">
-                      <h4 className="font-medium mb-3">Historique de paiement</h4>
-                      <div className="space-y-3">
-                        {order?.payment_date ? (
-                          <div className="flex items-center gap-3 text-sm">
-                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
-                            <span className="text-muted-foreground">Paiement vérifié le</span>
-                            <span className="font-medium">{format(new Date(order.payment_date), "dd MMMM yyyy", { locale: fr })}</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center gap-3 text-sm">
-                            <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                            <span className="text-muted-foreground">Paiement en attente</span>
-                          </div>
-                        )}
+                <TabsContent value="payment" className="space-y-4 mt-4">
+                  {isNationalSupplier ? (
+                    <NationalPaymentTracking
+                      orderId={orderId!}
+                      currentStage={order?.stage}
+                      paymentOrderNumber={order?.payment_order_number}
+                      paymentOrderDate={order?.payment_order_date}
+                      paymentSlipNumber={order?.payment_slip_number}
+                      paymentSlipDate={order?.payment_slip_date}
+                      treasuryPaymentDate={order?.treasury_payment_date}
+                      invoiceNumber={order?.invoice_number}
+                      invoiceDate={order?.invoice_date}
+                      invoiceAmount={order?.invoice_amount}
+                      readOnly={isReadOnly}
+                      onUpdate={loadOrder}
+                    />
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Référence de paiement</Label>
+                          <Input
+                            value={formData.payment_reference}
+                            onChange={(e) => setFormData({ ...formData, payment_reference: e.target.value })}
+                            placeholder="Numéro de virement, chèque..."
+                            disabled={isReadOnly}
+                            className="glass border-border/50 focus:border-emerald-500/50 disabled:opacity-60"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Date de paiement</Label>
+                          <Input
+                            type="date"
+                            value={order?.payment_date || ""}
+                            disabled
+                            className="glass border-border/50 opacity-50"
+                          />
+                          <p className="text-xs text-muted-foreground">Renseignée automatiquement à la validation du paiement</p>
+                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                      
+                      <Card className="glass border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
+                        <CardContent className="p-6">
+                          <div className="flex justify-between items-center">
+                            <div>
+                              <p className="text-lg font-medium">Montant Total à Payer</p>
+                              <p className="text-sm text-muted-foreground">TVA incluse</p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-4xl font-bold text-emerald-500">
+                                {order?.total_amount?.toLocaleString() || 0}
+                              </p>
+                              <p className="text-sm text-muted-foreground">{formData.currency}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {/* Payment Timeline */}
+                      <Card className="glass border-border/50">
+                        <CardContent className="p-4">
+                          <h4 className="font-medium mb-3">Historique de paiement</h4>
+                          <div className="space-y-3">
+                            {order?.payment_date ? (
+                              <div className="flex items-center gap-3 text-sm">
+                                <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                                <span className="text-muted-foreground">Paiement vérifié le</span>
+                                <span className="font-medium">{format(new Date(order.payment_date), "dd MMMM yyyy", { locale: fr })}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-3 text-sm">
+                                <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                                <span className="text-muted-foreground">Paiement en attente</span>
+                              </div>
+                            )}
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </>
+                  )}
                 </TabsContent>
               </motion.div>
             </AnimatePresence>
@@ -539,8 +613,8 @@ export const OrderDetailDialog = ({
             Fermer
           </Button>
           
-          {/* Receive button - only show for IN_TRANSIT or CUSTOMS_ENTRY */}
-          {(order?.stage === "IN_TRANSIT" || order?.stage === "CUSTOMS_ENTRY") && (
+          {/* Receive button - only show for IN_TRANSIT or CUSTOMS_ENTRY (international) or DELIVERY_PENDING (national) */}
+          {(order?.stage === "IN_TRANSIT" || order?.stage === "CUSTOMS_ENTRY" || order?.stage === "DELIVERY_PENDING") && (
             <Button
               onClick={() => setReceiveDialogOpen(true)}
               className="bg-green-600 hover:bg-green-700 text-white gap-2"

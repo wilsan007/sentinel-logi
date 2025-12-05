@@ -523,10 +523,14 @@ export type Database = {
         Row: {
           created_at: string | null
           id: string
+          item_status: string | null
           notes: string | null
           order_id: string
+          quantity_accepted: number | null
           quantity_ordered: number
           quantity_received: number | null
+          quantity_rejected: number | null
+          rejection_reason: string | null
           stock_item_id: string
           total_price: number | null
           unit_price: number | null
@@ -535,10 +539,14 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
+          item_status?: string | null
           notes?: string | null
           order_id: string
+          quantity_accepted?: number | null
           quantity_ordered: number
           quantity_received?: number | null
+          quantity_rejected?: number | null
+          rejection_reason?: string | null
           stock_item_id: string
           total_price?: number | null
           unit_price?: number | null
@@ -547,10 +555,14 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
+          item_status?: string | null
           notes?: string | null
           order_id?: string
+          quantity_accepted?: number | null
           quantity_ordered?: number
           quantity_received?: number | null
+          quantity_rejected?: number | null
+          rejection_reason?: string | null
           stock_item_id?: string
           total_price?: number | null
           unit_price?: number | null
@@ -583,18 +595,32 @@ export type Database = {
           customs_entry_date: string | null
           expected_delivery_date: string | null
           id: string
+          invoice_amount: number | null
+          invoice_date: string | null
+          invoice_number: string | null
           location_id: string
           notes: string | null
           order_number: string
           payment_date: string | null
+          payment_order_date: string | null
+          payment_order_number: string | null
           payment_reference: string | null
+          payment_slip_date: string | null
+          payment_slip_number: string | null
           port_of_entry: string | null
           stage: Database["public"]["Enums"]["procurement_stage"] | null
           supplier_id: string | null
           total_amount: number | null
           tracking_number: string | null
           transport_mode: Database["public"]["Enums"]["transport_mode"] | null
+          treasury_payment_date: string | null
           updated_at: string | null
+          verification_notes: string | null
+          verification_status:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+          verified_at: string | null
+          verified_by: string | null
         }
         Insert: {
           actual_delivery_date?: string | null
@@ -605,18 +631,32 @@ export type Database = {
           customs_entry_date?: string | null
           expected_delivery_date?: string | null
           id?: string
+          invoice_amount?: number | null
+          invoice_date?: string | null
+          invoice_number?: string | null
           location_id: string
           notes?: string | null
           order_number: string
           payment_date?: string | null
+          payment_order_date?: string | null
+          payment_order_number?: string | null
           payment_reference?: string | null
+          payment_slip_date?: string | null
+          payment_slip_number?: string | null
           port_of_entry?: string | null
           stage?: Database["public"]["Enums"]["procurement_stage"] | null
           supplier_id?: string | null
           total_amount?: number | null
           tracking_number?: string | null
           transport_mode?: Database["public"]["Enums"]["transport_mode"] | null
+          treasury_payment_date?: string | null
           updated_at?: string | null
+          verification_notes?: string | null
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Update: {
           actual_delivery_date?: string | null
@@ -627,18 +667,32 @@ export type Database = {
           customs_entry_date?: string | null
           expected_delivery_date?: string | null
           id?: string
+          invoice_amount?: number | null
+          invoice_date?: string | null
+          invoice_number?: string | null
           location_id?: string
           notes?: string | null
           order_number?: string
           payment_date?: string | null
+          payment_order_date?: string | null
+          payment_order_number?: string | null
           payment_reference?: string | null
+          payment_slip_date?: string | null
+          payment_slip_number?: string | null
           port_of_entry?: string | null
           stage?: Database["public"]["Enums"]["procurement_stage"] | null
           supplier_id?: string | null
           total_amount?: number | null
           tracking_number?: string | null
           transport_mode?: Database["public"]["Enums"]["transport_mode"] | null
+          treasury_payment_date?: string | null
           updated_at?: string | null
+          verification_notes?: string | null
+          verification_status?:
+            | Database["public"]["Enums"]["verification_status"]
+            | null
+          verified_at?: string | null
+          verified_by?: string | null
         }
         Relationships: [
           {
@@ -664,6 +718,73 @@ export type Database = {
           },
           {
             foreignKeyName: "procurement_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "view_supplier_performance"
+            referencedColumns: ["supplier_id"]
+          },
+        ]
+      }
+      procurement_quotes: {
+        Row: {
+          amount: number
+          created_at: string | null
+          currency: string | null
+          document_url: string | null
+          id: string
+          is_selected: boolean | null
+          notes: string | null
+          order_id: string
+          received_at: string | null
+          supplier_id: string
+          updated_at: string | null
+          validity_date: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          currency?: string | null
+          document_url?: string | null
+          id?: string
+          is_selected?: boolean | null
+          notes?: string | null
+          order_id: string
+          received_at?: string | null
+          supplier_id: string
+          updated_at?: string | null
+          validity_date?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          currency?: string | null
+          document_url?: string | null
+          id?: string
+          is_selected?: boolean | null
+          notes?: string | null
+          order_id?: string
+          received_at?: string | null
+          supplier_id?: string
+          updated_at?: string | null
+          validity_date?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "procurement_quotes_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_quotes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "suppliers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "procurement_quotes_supplier_id_fkey"
             columns: ["supplier_id"]
             isOneToOne: false
             referencedRelation: "view_supplier_performance"
@@ -1048,6 +1169,10 @@ export type Database = {
       }
       is_admin: { Args: { _user_id?: string }; Returns: boolean }
       is_chef_camp: { Args: { _user_id?: string }; Returns: boolean }
+      is_national_supplier: {
+        Args: { p_supplier_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin_central" | "chef_camp"
@@ -1060,6 +1185,14 @@ export type Database = {
         | "PAYMENT_VERIFIED"
         | "IN_TRANSIT"
         | "CUSTOMS_ENTRY"
+        | "QUOTE_REQUEST"
+        | "QUOTE_SELECTION"
+        | "INVOICE_RECEIVED"
+        | "DELIVERY_PENDING"
+        | "VERIFICATION"
+        | "PAYMENT_ORDER"
+        | "PAYMENT_TRACKING"
+        | "PAID"
         | "RECEIVED"
         | "CANCELLED"
       request_status: "en_attente" | "approuve" | "traite" | "refuse"
@@ -1079,6 +1212,12 @@ export type Database = {
         | "EMERGENCY_DISTRIBUTION"
       transport_mode: "AIR" | "SEA" | "LAND" | "MULTIMODAL"
       unit_type: "kg" | "litre" | "boite" | "unite"
+      verification_status:
+        | "PENDING"
+        | "VALIDATED"
+        | "ADJUSTED"
+        | "PARTIAL_REJECT"
+        | "REJECTED"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1216,6 +1355,14 @@ export const Constants = {
         "PAYMENT_VERIFIED",
         "IN_TRANSIT",
         "CUSTOMS_ENTRY",
+        "QUOTE_REQUEST",
+        "QUOTE_SELECTION",
+        "INVOICE_RECEIVED",
+        "DELIVERY_PENDING",
+        "VERIFICATION",
+        "PAYMENT_ORDER",
+        "PAYMENT_TRACKING",
+        "PAID",
         "RECEIVED",
         "CANCELLED",
       ],
@@ -1238,6 +1385,13 @@ export const Constants = {
       ],
       transport_mode: ["AIR", "SEA", "LAND", "MULTIMODAL"],
       unit_type: ["kg", "litre", "boite", "unite"],
+      verification_status: [
+        "PENDING",
+        "VALIDATED",
+        "ADJUSTED",
+        "PARTIAL_REJECT",
+        "REJECTED",
+      ],
     },
   },
 } as const
