@@ -71,7 +71,32 @@ const NATIONAL_STAGES: { key: ProcurementStage; label: string; shortLabel: strin
 
 const getStageIndex = (stage: ProcurementStage, stages: typeof INTERNATIONAL_STAGES): number => {
   if (stage === "CANCELLED") return -1;
-  return stages.findIndex((s) => s.key === stage);
+  const index = stages.findIndex((s) => s.key === stage);
+  // If stage not found in current workflow, return index based on progress
+  if (index === -1) {
+    // Try to find equivalent stage based on workflow position
+    const allStagesMap: Record<ProcurementStage, number> = {
+      DRAFT: 0,
+      SUPPLIER_SELECTION: 1,
+      QUOTE_REQUEST: 1,
+      ORDER_PLACED: 2,
+      QUOTE_SELECTION: 2,
+      PAYMENT_VERIFIED: 3,
+      INVOICE_RECEIVED: 3,
+      IN_TRANSIT: 4,
+      DELIVERY_PENDING: 4,
+      CUSTOMS_ENTRY: 5,
+      VERIFICATION: 5,
+      PAYMENT_ORDER: 6,
+      PAYMENT_TRACKING: 7,
+      RECEIVED: 7,
+      PAID: 8,
+      CANCELLED: -1,
+    };
+    // Return approximate position if stage doesn't match workflow
+    return Math.min(allStagesMap[stage] || 0, stages.length - 1);
+  }
+  return index;
 };
 
 export const ProcurementWorkflowStepper = ({
