@@ -88,6 +88,7 @@ export function VerificationManager({
 
   useEffect(() => {
     loadItems();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
   const loadItems = async () => {
@@ -119,7 +120,7 @@ export function VerificationManager({
     setLoading(false);
   };
 
-  const updateItem = (itemId: string, field: string, value: any) => {
+  const updateItem = (itemId: string, field: string, value: string | number) => {
     setItemUpdates((prev) => ({
       ...prev,
       [itemId]: {

@@ -84,6 +84,7 @@ export function QuotesManager({ orderId, readOnly = false, onQuoteSelected }: Qu
   useEffect(() => {
     loadQuotes();
     loadSuppliers();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
 
   const loadQuotes = async () => {

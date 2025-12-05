@@ -126,6 +126,7 @@ export const OrderDetailDialog = ({
       loadOrder();
       setActiveTab("general");
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, orderId]);
 
   const loadOrder = async () => {
