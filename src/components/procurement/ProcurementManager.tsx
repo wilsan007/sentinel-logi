@@ -54,6 +54,14 @@ const STAGE_CONFIG: Record<string, { label: string; color: string; bgColor: stri
   PAYMENT_VERIFIED: { label: "Paiement vérifié", color: "text-emerald-500", bgColor: "bg-emerald-500/20", icon: CheckCircle, progress: 50 },
   IN_TRANSIT: { label: "En transit", color: "text-amber-500", bgColor: "bg-amber-500/20", icon: Truck, progress: 70 },
   CUSTOMS_ENTRY: { label: "En douane", color: "text-orange-500", bgColor: "bg-orange-500/20", icon: Building2, progress: 85 },
+  QUOTE_REQUEST: { label: "Demande devis", color: "text-blue-500", bgColor: "bg-blue-500/20", icon: FileText, progress: 15 },
+  QUOTE_SELECTION: { label: "Sélection devis", color: "text-cyan-500", bgColor: "bg-cyan-500/20", icon: Search, progress: 25 },
+  INVOICE_RECEIVED: { label: "Facture reçue", color: "text-teal-500", bgColor: "bg-teal-500/20", icon: FileText, progress: 35 },
+  DELIVERY_PENDING: { label: "Attente livraison", color: "text-amber-500", bgColor: "bg-amber-500/20", icon: Truck, progress: 50 },
+  VERIFICATION: { label: "Vérification", color: "text-purple-500", bgColor: "bg-purple-500/20", icon: Package, progress: 75 },
+  PAYMENT_ORDER: { label: "Bon commande", color: "text-orange-500", bgColor: "bg-orange-500/20", icon: FileText, progress: 85 },
+  PAYMENT_TRACKING: { label: "Bordereau", color: "text-emerald-500", bgColor: "bg-emerald-500/20", icon: CheckCircle, progress: 95 },
+  PAID: { label: "Payé", color: "text-green-500", bgColor: "bg-green-500/20", icon: CheckCircle, progress: 100 },
   RECEIVED: { label: "Reçu", color: "text-green-500", bgColor: "bg-green-500/20", icon: CheckCircle, progress: 100 },
   CANCELLED: { label: "Annulé", color: "text-red-500", bgColor: "bg-red-500/20", icon: XCircle, progress: 0 }
 };
