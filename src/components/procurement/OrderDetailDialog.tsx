@@ -119,7 +119,7 @@ export const OrderDetailDialog = ({
     port_of_entry: "",
     payment_reference: "",
     notes: "",
-    currency: "DJF",
+    currency: "FDJ",
   });
 
   useEffect(() => {
@@ -154,7 +154,7 @@ export const OrderDetailDialog = ({
         port_of_entry: data.port_of_entry || "",
         payment_reference: data.payment_reference || "",
         notes: data.notes || "",
-        currency: data.currency || "DJF",
+        currency: data.currency || "FDJ",
       });
     }
     setLoading(false);
@@ -483,7 +483,7 @@ export const OrderDetailDialog = ({
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="DJF">DJF (Franc Djibouti)</SelectItem>
+                          <SelectItem value="FDJ">FDJ (Franc Djibouti)</SelectItem>
                           <SelectItem value="USD">USD (Dollar)</SelectItem>
                           <SelectItem value="EUR">EUR (Euro)</SelectItem>
                           <SelectItem value="XAF">XAF (FCFA)</SelectItem>

@@ -225,7 +225,7 @@ export function NationalPaymentTracking({
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Montant (DJF)</Label>
+                <Label className="text-xs">Montant (FDJ)</Label>
                 <Input
                   type="number"
                   value={formData.invoice_amount}
