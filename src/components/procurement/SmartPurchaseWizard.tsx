@@ -80,6 +80,23 @@ interface SelectedItem {
   };
 }
 
+interface PendingRequest {
+  id: string;
+  location_id: string;
+  stock_item_id: string;
+  quantite_demandee: number;
+  notes: string | null;
+  date_demande: string;
+  location?: {
+    nom: string;
+    code: string;
+  };
+  stock_items?: {
+    type: string;
+    sous_type: string | null;
+  };
+}
+
 const STEPS = [
   { key: 1, label: "Catégorie", icon: Package },
   { key: 2, label: "Articles", icon: ClipboardList },
@@ -105,6 +122,7 @@ export const SmartPurchaseWizard = ({
   const [lowStockItems, setLowStockItems] = useState<LowStockItem[]>([]);
   const [allStockItems, setAllStockItems] = useState<StockItem[]>([]);
   const [selectedItems, setSelectedItems] = useState<SelectedItem[]>([]);
+  const [pendingRequests, setPendingRequests] = useState<PendingRequest[]>([]);
   
   // Step 3: Supplier
   const [selectedSupplierId, setSelectedSupplierId] = useState("");
@@ -219,6 +237,22 @@ export const SmartPurchaseWizard = ({
       setLowStockItems(lowStock);
     }
 
+    // Load pending requests from all camps for this category
+    const { data: requestsData } = await supabase
+      .from("requests")
+      .select(`
+        *,
+        locations:location_id(nom, code),
+        stock_items!inner(type, sous_type, categorie)
+      `)
+      .eq("statut", "en_attente")
+      .eq("stock_items.categorie", selectedCategory)
+      .order("date_demande", { ascending: true });
+
+    if (requestsData) {
+      setPendingRequests(requestsData);
+    }
+
     setLoading(false);
   };
 
@@ -273,6 +307,72 @@ export const SmartPurchaseWizard = ({
 
   const removeItem = (stockItemId: string) => {
     setSelectedItems(selectedItems.filter((s) => s.stock_item_id !== stockItemId));
+  };
+
+  const addFromRequest = (request: PendingRequest) => {
+    if (!request.stock_items) return;
+    
+    const existingIndex = selectedItems.findIndex(
+      (s) => s.stock_item_id === request.stock_item_id
+    );
+    
+    if (existingIndex >= 0) {
+      // Add to existing quantity
+      setSelectedItems(
+        selectedItems.map((item, index) =>
+          index === existingIndex
+            ? { ...item, quantity: item.quantity + request.quantite_demandee }
+            : item
+        )
+      );
+    } else {
+      // Add new item
+      setSelectedItems([
+        ...selectedItems,
+        {
+          stock_item_id: request.stock_item_id,
+          type: request.stock_items.type,
+          sous_type: request.stock_items.sous_type,
+          quantity: request.quantite_demandee,
+          unit_price: 0,
+        },
+      ]);
+    }
+  };
+
+  const addAllFromRequests = () => {
+    // Group requests by stock_item_id and sum quantities
+    const requestMap = new Map<string, { qty: number; item: PendingRequest }>();
+    
+    pendingRequests.forEach((req) => {
+      if (req.stock_items) {
+        const existing = requestMap.get(req.stock_item_id);
+        if (existing) {
+          existing.qty += req.quantite_demandee;
+        } else {
+          requestMap.set(req.stock_item_id, { qty: req.quantite_demandee, item: req });
+        }
+      }
+    });
+
+    // Add or update items
+    const newItems = [...selectedItems];
+    requestMap.forEach((data, stockItemId) => {
+      const existingIndex = newItems.findIndex((s) => s.stock_item_id === stockItemId);
+      if (existingIndex >= 0) {
+        newItems[existingIndex].quantity += data.qty;
+      } else if (data.item.stock_items) {
+        newItems.push({
+          stock_item_id: stockItemId,
+          type: data.item.stock_items.type,
+          sous_type: data.item.stock_items.sous_type,
+          quantity: data.qty,
+          unit_price: 0,
+        });
+      }
+    });
+
+    setSelectedItems(newItems);
   };
 
   const canProceed = (): boolean => {
@@ -542,6 +642,61 @@ export const SmartPurchaseWizard = ({
                             </div>
                           );
                         })}
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Pending requests from camps */}
+                  {pendingRequests.length > 0 && (
+                    <Card className="border-purple-500/30 bg-purple-500/5">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-purple-500">
+                            <ClipboardList className="h-4 w-4" />
+                            Demandes des camps ({pendingRequests.length})
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={addAllFromRequests}
+                            className="text-purple-500 border-purple-500/30 hover:bg-purple-500/10"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Tout ajouter
+                          </Button>
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-2 max-h-[200px] overflow-y-auto">
+                        {pendingRequests.map((request) => (
+                          <div
+                            key={request.id}
+                            className="flex items-center justify-between p-3 rounded-lg bg-background/50 hover:bg-background/80 transition-all cursor-pointer"
+                            onClick={() => addFromRequest(request)}
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center">
+                                <span className="text-xs font-medium text-purple-500">
+                                  {request.location?.code?.substring(0, 2) || "?"}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium">
+                                  {request.stock_items?.type} {request.stock_items?.sous_type && `- ${request.stock_items.sous_type}`}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {request.location?.nom} • {request.quantite_demandee} unités demandées
+                                </p>
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-purple-500 hover:bg-purple-500/10"
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ))}
                       </CardContent>
                     </Card>
                   )}
