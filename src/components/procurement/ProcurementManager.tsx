@@ -37,7 +37,9 @@ import {
 import { CreateOrderDialog } from "./CreateOrderDialog";
 import { SmartPurchaseWizard } from "./SmartPurchaseWizard";
 import { OrderDetailDialog } from "./OrderDetailDialog";
+import { RequestsManagementDialog } from "./RequestsManagementDialog";
 import { Progress } from "@/components/ui/progress";
+import { ClipboardList } from "lucide-react";
 
 interface ProcurementManagerProps {
   locationId: string;
@@ -78,6 +80,7 @@ export function ProcurementManager({ locationId }: ProcurementManagerProps) {
   const [smartWizardOpen, setSmartWizardOpen] = useState(false);
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [requestsDialogOpen, setRequestsDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -247,6 +250,14 @@ export function ProcurementManager({ locationId }: ProcurementManagerProps) {
             </div>
 
             <div className="flex gap-2">
+              <Button
+                onClick={() => setRequestsDialogOpen(true)}
+                variant="outline"
+                className="gap-2 bg-gradient-to-r from-purple-500/20 to-violet-500/20 hover:from-purple-500/30 hover:to-violet-500/30 text-purple-400 border border-purple-500/30"
+              >
+                <ClipboardList className="h-4 w-4" />
+                Demandes des camps
+              </Button>
               <Button
                 onClick={() => setSmartWizardOpen(true)}
                 className="gap-2 bg-gradient-to-r from-emerald-500/20 to-teal-500/20 hover:from-emerald-500/30 hover:to-teal-500/30 text-emerald-500 border border-emerald-500/30"
@@ -460,6 +471,12 @@ export function ProcurementManager({ locationId }: ProcurementManagerProps) {
         onSuccess={() => {
           loadOrders();
         }}
+      />
+
+      <RequestsManagementDialog
+        open={requestsDialogOpen}
+        onOpenChange={setRequestsDialogOpen}
+        onRequestsUpdated={loadOrders}
       />
     </div>
   );
