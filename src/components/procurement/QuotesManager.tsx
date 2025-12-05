@@ -76,7 +76,7 @@ export function QuotesManager({ orderId, readOnly = false, onQuoteSelected }: Qu
   const [newQuote, setNewQuote] = useState({
     supplier_id: "",
     amount: "",
-    currency: "DJF",
+    currency: "FDJ",
     validity_date: "",
     notes: "",
   });
@@ -140,7 +140,7 @@ export function QuotesManager({ orderId, readOnly = false, onQuoteSelected }: Qu
     } else {
       toast({ title: "Succès", description: "Devis ajouté" });
       setAddDialogOpen(false);
-      setNewQuote({ supplier_id: "", amount: "", currency: "DJF", validity_date: "", notes: "" });
+      setNewQuote({ supplier_id: "", amount: "", currency: "FDJ", validity_date: "", notes: "" });
       loadQuotes();
     }
     setSaving(false);
@@ -387,7 +387,7 @@ export function QuotesManager({ orderId, readOnly = false, onQuoteSelected }: Qu
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="DJF">DJF (Franc Djibouti)</SelectItem>
+                    <SelectItem value="FDJ">FDJ (Franc Djibouti)</SelectItem>
                     <SelectItem value="USD">USD (Dollar)</SelectItem>
                     <SelectItem value="EUR">EUR (Euro)</SelectItem>
                   </SelectContent>
