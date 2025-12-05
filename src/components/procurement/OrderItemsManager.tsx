@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import {
   Select,
   SelectContent,
@@ -14,13 +15,16 @@ import {
   Plus, 
   Trash2, 
   Package,
-  Loader2
+  Loader2,
+  ShoppingCart,
+  AlertCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface OrderItemsManagerProps {
   orderId: string;
+  currency?: string;
   onTotalChange?: (total: number) => void;
 }
 
@@ -43,7 +47,7 @@ interface OrderItem {
   stock_items?: StockItem;
 }
 
-export const OrderItemsManager = ({ orderId, onTotalChange }: OrderItemsManagerProps) => {
+export const OrderItemsManager = ({ orderId, currency = "XAF", onTotalChange }: OrderItemsManagerProps) => {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -109,6 +113,16 @@ export const OrderItemsManager = ({ orderId, onTotalChange }: OrderItemsManagerP
       toast({
         title: "Erreur",
         description: "Veuillez sélectionner un article et une quantité valide",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if item already exists
+    if (items.some(i => i.stock_item_id === newItem.stock_item_id)) {
+      toast({
+        title: "Article déjà ajouté",
+        description: "Modifiez la quantité de l'article existant",
         variant: "destructive",
       });
       return;
@@ -188,11 +202,22 @@ export const OrderItemsManager = ({ orderId, onTotalChange }: OrderItemsManagerP
   };
 
   const totalAmount = items.reduce((sum, item) => sum + (item.total_price || 0), 0);
+  const totalQuantity = items.reduce((sum, item) => sum + item.quantity_ordered, 0);
+
+  // Group available stock items by category
+  const groupedStockItems = stockItems.reduce((acc, item) => {
+    if (!acc[item.categorie]) {
+      acc[item.categorie] = [];
+    }
+    acc[item.categorie].push(item);
+    return acc;
+  }, {} as Record<string, StockItem[]>);
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+      <div className="flex flex-col items-center justify-center py-12 gap-4">
+        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+        <p className="text-muted-foreground">Chargement des articles...</p>
       </div>
     );
   }
@@ -201,10 +226,16 @@ export const OrderItemsManager = ({ orderId, onTotalChange }: OrderItemsManagerP
     <div className="space-y-4">
       {/* Add new item form */}
       <Card className="glass border-emerald-500/20">
-        <CardContent className="p-4">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Plus className="h-4 w-4 text-emerald-500" />
+            Ajouter un article
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
           <div className="flex items-end gap-3">
             <div className="flex-1 space-y-2">
-              <label className="text-sm font-medium">Article</label>
+              <label className="text-xs font-medium text-muted-foreground">Article</label>
               <Select
                 value={newItem.stock_item_id}
                 onValueChange={(value) => setNewItem({ ...newItem, stock_item_id: value })}
@@ -212,41 +243,50 @@ export const OrderItemsManager = ({ orderId, onTotalChange }: OrderItemsManagerP
                 <SelectTrigger className="glass border-border/50">
                   <SelectValue placeholder="Sélectionner un article..." />
                 </SelectTrigger>
-                <SelectContent>
-                  {stockItems.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.type} {item.sous_type ? `- ${item.sous_type}` : ""} ({item.categorie})
-                    </SelectItem>
+                <SelectContent className="max-h-[300px]">
+                  {Object.entries(groupedStockItems).map(([category, categoryItems]) => (
+                    <div key={category}>
+                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                        {category === "GEAR" ? "🎽 Habillement" : "🍽️ Alimentaire"}
+                      </div>
+                      {categoryItems
+                        .filter((i) => !items.some((existing) => existing.stock_item_id === i.id))
+                        .map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.type} {item.sous_type ? `- ${item.sous_type}` : ""}
+                          </SelectItem>
+                        ))}
+                    </div>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="w-32 space-y-2">
-              <label className="text-sm font-medium">Quantité</label>
+            <div className="w-28 space-y-2">
+              <label className="text-xs font-medium text-muted-foreground">Quantité</label>
               <Input
                 type="number"
                 min={1}
                 value={newItem.quantity_ordered}
                 onChange={(e) => setNewItem({ ...newItem, quantity_ordered: parseInt(e.target.value) || 1 })}
-                className="glass border-border/50"
+                className="glass border-border/50 text-center"
               />
             </div>
-            <div className="w-40 space-y-2">
-              <label className="text-sm font-medium">Prix unitaire</label>
+            <div className="w-36 space-y-2">
+              <label className="text-xs font-medium text-muted-foreground">Prix unitaire ({currency})</label>
               <Input
                 type="number"
                 min={0}
                 value={newItem.unit_price}
                 onChange={(e) => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
-                className="glass border-border/50"
+                className="glass border-border/50 text-right"
               />
             </div>
             <Button
               onClick={handleAddItem}
-              disabled={saving}
-              className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-500 border border-emerald-500/30"
+              disabled={saving || !newItem.stock_item_id}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white"
             >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
               Ajouter
             </Button>
           </div>
@@ -255,7 +295,7 @@ export const OrderItemsManager = ({ orderId, onTotalChange }: OrderItemsManagerP
 
       {/* Items list */}
       <div className="space-y-2">
-        <AnimatePresence>
+        <AnimatePresence mode="popLayout">
           {items.map((item, index) => (
             <motion.div
               key={item.id}
@@ -263,21 +303,22 @@ export const OrderItemsManager = ({ orderId, onTotalChange }: OrderItemsManagerP
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
               transition={{ delay: index * 0.05 }}
+              layout
             >
-              <Card className="glass border-border/50">
+              <Card className="glass border-border/50 hover:border-emerald-500/30 transition-colors">
                 <CardContent className="p-4">
                   <div className="flex items-center gap-4">
-                    <div className="p-2 rounded-lg bg-emerald-500/10">
+                    <div className="p-2.5 rounded-xl bg-emerald-500/10">
                       <Package className="h-5 w-5 text-emerald-500" />
                     </div>
-                    <div className="flex-1">
-                      <p className="font-medium">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">
                         {item.stock_items?.type}
                         {item.stock_items?.sous_type && ` - ${item.stock_items.sous_type}`}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        {item.stock_items?.categorie}
-                      </p>
+                      <Badge variant="secondary" className="text-xs mt-1">
+                        {item.stock_items?.categorie === "GEAR" ? "Habillement" : "Alimentaire"}
+                      </Badge>
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="w-24">
@@ -286,31 +327,33 @@ export const OrderItemsManager = ({ orderId, onTotalChange }: OrderItemsManagerP
                           min={1}
                           value={item.quantity_ordered}
                           onChange={(e) => handleUpdateItem(item.id, "quantity_ordered", parseInt(e.target.value) || 1)}
-                          className="glass border-border/50 text-center"
+                          className="glass border-border/50 text-center h-9"
                         />
-                        <p className="text-xs text-muted-foreground text-center mt-1">Quantité</p>
+                        <p className="text-xs text-muted-foreground text-center mt-1">Qté</p>
                       </div>
+                      <div className="text-muted-foreground">×</div>
                       <div className="w-32">
                         <Input
                           type="number"
                           min={0}
                           value={item.unit_price || 0}
                           onChange={(e) => handleUpdateItem(item.id, "unit_price", parseFloat(e.target.value) || 0)}
-                          className="glass border-border/50 text-right"
+                          className="glass border-border/50 text-right h-9"
                         />
-                        <p className="text-xs text-muted-foreground text-center mt-1">Prix unitaire</p>
+                        <p className="text-xs text-muted-foreground text-center mt-1">Prix unit.</p>
                       </div>
-                      <div className="w-32 text-right">
-                        <p className="font-semibold text-emerald-500">
+                      <div className="text-muted-foreground">=</div>
+                      <div className="w-36 text-right">
+                        <p className="text-lg font-bold text-emerald-500">
                           {(item.total_price || 0).toLocaleString()}
                         </p>
-                        <p className="text-xs text-muted-foreground">Total</p>
+                        <p className="text-xs text-muted-foreground">{currency}</p>
                       </div>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => handleDeleteItem(item.id)}
-                        className="text-red-500 hover:text-red-600 hover:bg-red-500/10"
+                        className="text-red-500 hover:text-red-600 hover:bg-red-500/10 h-9 w-9 p-0"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -323,26 +366,52 @@ export const OrderItemsManager = ({ orderId, onTotalChange }: OrderItemsManagerP
         </AnimatePresence>
       </div>
 
+      {/* Empty state */}
       {items.length === 0 && (
-        <div className="text-center py-8 text-muted-foreground">
-          <Package className="h-12 w-12 mx-auto mb-2 opacity-50" />
-          <p>Aucun article dans cette commande</p>
-          <p className="text-sm">Ajoutez des articles ci-dessus</p>
-        </div>
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-12"
+        >
+          <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted/50 flex items-center justify-center">
+            <ShoppingCart className="h-8 w-8 text-muted-foreground/50" />
+          </div>
+          <h3 className="font-medium mb-1">Aucun article</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Ajoutez des articles à cette commande
+          </p>
+          <div className="flex items-center justify-center gap-2 text-sm text-amber-500">
+            <AlertCircle className="h-4 w-4" />
+            <span>Une commande doit avoir au moins un article</span>
+          </div>
+        </motion.div>
       )}
 
       {/* Total */}
       {items.length > 0 && (
-        <Card className="glass border-emerald-500/30 bg-emerald-500/5">
-          <CardContent className="p-4">
-            <div className="flex justify-between items-center">
-              <span className="text-lg font-medium">Total de la commande</span>
-              <span className="text-2xl font-bold text-emerald-500">
-                {totalAmount.toLocaleString()} XAF
-              </span>
-            </div>
-          </CardContent>
-        </Card>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <Card className="glass border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
+            <CardContent className="p-5">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm text-muted-foreground">Total de la commande</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {items.length} article{items.length > 1 ? "s" : ""} • {totalQuantity} unités
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-3xl font-bold text-emerald-500">
+                    {totalAmount.toLocaleString()}
+                  </p>
+                  <p className="text-sm text-muted-foreground">{currency}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       )}
     </div>
   );

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -20,13 +21,14 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Package, Truck, FileText, DollarSign } from "lucide-react";
+import { Loader2, Package, Truck, FileText, DollarSign, Building2, Calendar, MapPin, Hash } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { SupplierSelector } from "./SupplierSelector";
 import { OrderItemsManager } from "./OrderItemsManager";
 import { ProcurementWorkflowStepper } from "./ProcurementWorkflowStepper";
 import type { Database } from "@/integrations/supabase/types";
+import { motion, AnimatePresence } from "framer-motion";
 
 type ProcurementStage = Database["public"]["Enums"]["procurement_stage"];
 type TransportMode = Database["public"]["Enums"]["transport_mode"];
@@ -47,6 +49,24 @@ const STAGE_LABELS: Record<string, string> = {
   CUSTOMS_ENTRY: "En douane",
   RECEIVED: "Reçu",
   CANCELLED: "Annulé"
+};
+
+const STAGE_COLORS: Record<string, string> = {
+  DRAFT: "bg-gray-500/20 text-gray-400",
+  SUPPLIER_SELECTION: "bg-blue-500/20 text-blue-500",
+  ORDER_PLACED: "bg-cyan-500/20 text-cyan-500",
+  PAYMENT_VERIFIED: "bg-emerald-500/20 text-emerald-500",
+  IN_TRANSIT: "bg-amber-500/20 text-amber-500",
+  CUSTOMS_ENTRY: "bg-orange-500/20 text-orange-500",
+  RECEIVED: "bg-green-500/20 text-green-500",
+  CANCELLED: "bg-red-500/20 text-red-500"
+};
+
+const TRANSPORT_LABELS: Record<string, string> = {
+  AIR: "Aérien",
+  SEA: "Maritime",
+  LAND: "Terrestre",
+  MULTIMODAL: "Multimodal"
 };
 
 export const OrderDetailDialog = ({
@@ -77,6 +97,7 @@ export const OrderDetailDialog = ({
   useEffect(() => {
     if (open && orderId) {
       loadOrder();
+      setActiveTab("general");
     }
   }, [open, orderId]);
 
@@ -190,8 +211,9 @@ export const OrderDetailDialog = ({
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="glass border border-emerald-500/20 max-w-4xl">
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+          <div className="flex flex-col items-center justify-center py-12 gap-4">
+            <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
+            <p className="text-muted-foreground">Chargement de la commande...</p>
           </div>
         </DialogContent>
       </Dialog>
@@ -200,177 +222,284 @@ export const OrderDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass border border-emerald-500/20 max-w-5xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-3">
-            <span className="text-emerald-500">Commande #{order?.order_number}</span>
-            <Badge className={`${
-              order?.stage === 'RECEIVED' ? 'bg-green-500/20 text-green-500' :
-              order?.stage === 'CANCELLED' ? 'bg-red-500/20 text-red-500' :
-              'bg-emerald-500/20 text-emerald-500'
-            }`}>
-              {STAGE_LABELS[order?.stage]}
-            </Badge>
+      <DialogContent className="glass border border-emerald-500/20 max-w-5xl max-h-[90vh] overflow-hidden flex flex-col">
+        <DialogHeader className="pb-4 border-b border-border/50">
+          <DialogTitle className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-500/10">
+                <Package className="h-5 w-5 text-emerald-500" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xl font-bold text-emerald-500">#{order?.order_number}</span>
+                  <Badge className={`${STAGE_COLORS[order?.stage]} border-0`}>
+                    {STAGE_LABELS[order?.stage]}
+                  </Badge>
+                </div>
+                {order?.suppliers && (
+                  <p className="text-sm text-muted-foreground font-normal">
+                    {order.suppliers.name} ({order.suppliers.code})
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-2xl font-bold text-emerald-500">
+                {order?.total_amount?.toLocaleString() || 0}
+              </p>
+              <p className="text-xs text-muted-foreground">{formData.currency}</p>
+            </div>
           </DialogTitle>
         </DialogHeader>
 
         {/* Workflow Stepper */}
-        <ProcurementWorkflowStepper 
-          currentStage={order?.stage} 
-          onStageChange={handleStageChange}
-        />
+        <div className="py-4">
+          <ProcurementWorkflowStepper 
+            currentStage={order?.stage} 
+            onStageChange={handleStageChange}
+          />
+        </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="mt-4">
-          <TabsList className="glass border border-border/50">
-            <TabsTrigger value="general" className="gap-2">
-              <FileText className="h-4 w-4" />
-              Général
-            </TabsTrigger>
-            <TabsTrigger value="supplier" className="gap-2">
-              <Truck className="h-4 w-4" />
-              Fournisseur
-            </TabsTrigger>
-            <TabsTrigger value="items" className="gap-2">
-              <Package className="h-4 w-4" />
-              Articles
-            </TabsTrigger>
-            <TabsTrigger value="payment" className="gap-2">
-              <DollarSign className="h-4 w-4" />
-              Paiement
-            </TabsTrigger>
-          </TabsList>
+        <div className="flex-1 overflow-y-auto">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList className="glass border border-border/50 w-full justify-start">
+              <TabsTrigger value="general" className="gap-2 data-[state=active]:text-emerald-500">
+                <FileText className="h-4 w-4" />
+                Général
+              </TabsTrigger>
+              <TabsTrigger value="supplier" className="gap-2 data-[state=active]:text-emerald-500">
+                <Building2 className="h-4 w-4" />
+                Fournisseur
+              </TabsTrigger>
+              <TabsTrigger value="items" className="gap-2 data-[state=active]:text-emerald-500">
+                <Package className="h-4 w-4" />
+                Articles
+              </TabsTrigger>
+              <TabsTrigger value="payment" className="gap-2 data-[state=active]:text-emerald-500">
+                <DollarSign className="h-4 w-4" />
+                Paiement
+              </TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="general" className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Numéro de commande</Label>
-                <Input
-                  value={formData.order_number}
-                  onChange={(e) => setFormData({ ...formData, order_number: e.target.value })}
-                  className="glass border-border/50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Mode de transport</Label>
-                <Select
-                  value={formData.transport_mode}
-                  onValueChange={(value) => setFormData({ ...formData, transport_mode: value as TransportMode })}
-                >
-                  <SelectTrigger className="glass border-border/50">
-                    <SelectValue placeholder="Sélectionner..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="AIR">Aérien</SelectItem>
-                    <SelectItem value="SEA">Maritime</SelectItem>
-                    <SelectItem value="LAND">Terrestre</SelectItem>
-                    <SelectItem value="MULTIMODAL">Multimodal</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Date de livraison prévue</Label>
-                <Input
-                  type="date"
-                  value={formData.expected_delivery_date}
-                  onChange={(e) => setFormData({ ...formData, expected_delivery_date: e.target.value })}
-                  className="glass border-border/50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Numéro de suivi</Label>
-                <Input
-                  value={formData.tracking_number}
-                  onChange={(e) => setFormData({ ...formData, tracking_number: e.target.value })}
-                  placeholder="Tracking number..."
-                  className="glass border-border/50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Port d'entrée</Label>
-                <Input
-                  value={formData.port_of_entry}
-                  onChange={(e) => setFormData({ ...formData, port_of_entry: e.target.value })}
-                  placeholder="Ex: Douala, Kribi..."
-                  className="glass border-border/50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Devise</Label>
-                <Select
-                  value={formData.currency}
-                  onValueChange={(value) => setFormData({ ...formData, currency: value })}
-                >
-                  <SelectTrigger className="glass border-border/50">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="XAF">XAF (FCFA)</SelectItem>
-                    <SelectItem value="EUR">EUR (Euro)</SelectItem>
-                    <SelectItem value="USD">USD (Dollar)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Notes</Label>
-              <Textarea
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                placeholder="Notes additionnelles..."
-                className="glass border-border/50 min-h-[100px]"
-              />
-            </div>
-          </TabsContent>
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={activeTab}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <TabsContent value="general" className="space-y-4 mt-4">
+                  {/* Quick Info Cards */}
+                  <div className="grid grid-cols-4 gap-3 mb-4">
+                    <Card className="glass border-border/50">
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <Calendar className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Créée le</p>
+                          <p className="text-sm font-medium">
+                            {order?.created_at ? format(new Date(order.created_at), "dd MMM yyyy", { locale: fr }) : "—"}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="glass border-border/50">
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <Truck className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Transport</p>
+                          <p className="text-sm font-medium">
+                            {formData.transport_mode ? TRANSPORT_LABELS[formData.transport_mode] : "Non défini"}
+                          </p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="glass border-border/50">
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Port d'entrée</p>
+                          <p className="text-sm font-medium">{formData.port_of_entry || "Non défini"}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    <Card className="glass border-border/50">
+                      <CardContent className="p-3 flex items-center gap-3">
+                        <Hash className="h-4 w-4 text-muted-foreground" />
+                        <div>
+                          <p className="text-xs text-muted-foreground">Tracking</p>
+                          <p className="text-sm font-medium">{formData.tracking_number || "—"}</p>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
 
-          <TabsContent value="supplier" className="mt-4">
-            <SupplierSelector
-              selectedSupplierId={formData.supplier_id}
-              onSupplierSelect={(id) => setFormData({ ...formData, supplier_id: id })}
-            />
-          </TabsContent>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Numéro de commande</Label>
+                      <Input
+                        value={formData.order_number}
+                        onChange={(e) => setFormData({ ...formData, order_number: e.target.value })}
+                        className="glass border-border/50 focus:border-emerald-500/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Mode de transport</Label>
+                      <Select
+                        value={formData.transport_mode}
+                        onValueChange={(value) => setFormData({ ...formData, transport_mode: value as TransportMode })}
+                      >
+                        <SelectTrigger className="glass border-border/50">
+                          <SelectValue placeholder="Sélectionner..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AIR">🛫 Aérien</SelectItem>
+                          <SelectItem value="SEA">🚢 Maritime</SelectItem>
+                          <SelectItem value="LAND">🚛 Terrestre</SelectItem>
+                          <SelectItem value="MULTIMODAL">🔄 Multimodal</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Date de livraison prévue</Label>
+                      <Input
+                        type="date"
+                        value={formData.expected_delivery_date}
+                        onChange={(e) => setFormData({ ...formData, expected_delivery_date: e.target.value })}
+                        className="glass border-border/50 focus:border-emerald-500/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Numéro de suivi</Label>
+                      <Input
+                        value={formData.tracking_number}
+                        onChange={(e) => setFormData({ ...formData, tracking_number: e.target.value })}
+                        placeholder="Tracking number..."
+                        className="glass border-border/50 focus:border-emerald-500/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Port d'entrée</Label>
+                      <Input
+                        value={formData.port_of_entry}
+                        onChange={(e) => setFormData({ ...formData, port_of_entry: e.target.value })}
+                        placeholder="Ex: Douala, Kribi..."
+                        className="glass border-border/50 focus:border-emerald-500/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Devise</Label>
+                      <Select
+                        value={formData.currency}
+                        onValueChange={(value) => setFormData({ ...formData, currency: value })}
+                      >
+                        <SelectTrigger className="glass border-border/50">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="XAF">XAF (FCFA)</SelectItem>
+                          <SelectItem value="EUR">EUR (Euro)</SelectItem>
+                          <SelectItem value="USD">USD (Dollar)</SelectItem>
+                          <SelectItem value="DJF">DJF (Franc Djibouti)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Notes</Label>
+                    <Textarea
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Notes additionnelles, instructions spéciales..."
+                      className="glass border-border/50 min-h-[100px] focus:border-emerald-500/50"
+                    />
+                  </div>
+                </TabsContent>
 
-          <TabsContent value="items" className="mt-4">
-            <OrderItemsManager 
-              orderId={orderId!} 
-              onTotalChange={(total) => {
-                // Update total in parent if needed
-              }}
-            />
-          </TabsContent>
+                <TabsContent value="supplier" className="mt-4">
+                  <SupplierSelector
+                    selectedSupplierId={formData.supplier_id}
+                    onSupplierSelect={(id) => setFormData({ ...formData, supplier_id: id })}
+                  />
+                </TabsContent>
 
-          <TabsContent value="payment" className="space-y-4 mt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Référence de paiement</Label>
-                <Input
-                  value={formData.payment_reference}
-                  onChange={(e) => setFormData({ ...formData, payment_reference: e.target.value })}
-                  placeholder="Numéro de virement, chèque..."
-                  className="glass border-border/50"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Date de paiement</Label>
-                <Input
-                  type="date"
-                  value={order?.payment_date || ""}
-                  disabled
-                  className="glass border-border/50 opacity-50"
-                />
-              </div>
-            </div>
-            <div className="p-4 rounded-lg bg-emerald-500/10 border border-emerald-500/20">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-medium">Montant Total</span>
-                <span className="text-2xl font-bold text-emerald-500">
-                  {order?.total_amount?.toLocaleString() || 0} {formData.currency}
-                </span>
-              </div>
-            </div>
-          </TabsContent>
-        </Tabs>
+                <TabsContent value="items" className="mt-4">
+                  <OrderItemsManager 
+                    orderId={orderId!} 
+                    currency={formData.currency}
+                    onTotalChange={(total) => {
+                      setOrder((prev: any) => prev ? { ...prev, total_amount: total } : prev);
+                    }}
+                  />
+                </TabsContent>
 
-        <div className="flex justify-end gap-2 mt-6 pt-4 border-t border-border/50">
+                <TabsContent value="payment" className="space-y-4 mt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>Référence de paiement</Label>
+                      <Input
+                        value={formData.payment_reference}
+                        onChange={(e) => setFormData({ ...formData, payment_reference: e.target.value })}
+                        placeholder="Numéro de virement, chèque..."
+                        className="glass border-border/50 focus:border-emerald-500/50"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Date de paiement</Label>
+                      <Input
+                        type="date"
+                        value={order?.payment_date || ""}
+                        disabled
+                        className="glass border-border/50 opacity-50"
+                      />
+                      <p className="text-xs text-muted-foreground">Renseignée automatiquement à la validation du paiement</p>
+                    </div>
+                  </div>
+                  
+                  <Card className="glass border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-teal-500/10">
+                    <CardContent className="p-6">
+                      <div className="flex justify-between items-center">
+                        <div>
+                          <p className="text-lg font-medium">Montant Total à Payer</p>
+                          <p className="text-sm text-muted-foreground">TVA incluse</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-4xl font-bold text-emerald-500">
+                            {order?.total_amount?.toLocaleString() || 0}
+                          </p>
+                          <p className="text-sm text-muted-foreground">{formData.currency}</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Payment Timeline */}
+                  <Card className="glass border-border/50">
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-3">Historique de paiement</h4>
+                      <div className="space-y-3">
+                        {order?.payment_date ? (
+                          <div className="flex items-center gap-3 text-sm">
+                            <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                            <span className="text-muted-foreground">Paiement vérifié le</span>
+                            <span className="font-medium">{format(new Date(order.payment_date), "dd MMMM yyyy", { locale: fr })}</span>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-3 text-sm">
+                            <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                            <span className="text-muted-foreground">Paiement en attente</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </motion.div>
+            </AnimatePresence>
+          </Tabs>
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4 border-t border-border/50">
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
@@ -381,7 +510,7 @@ export const OrderDetailDialog = ({
           <Button
             onClick={handleSave}
             disabled={saving}
-            className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-500 border border-emerald-500/30"
+            className="bg-emerald-500 hover:bg-emerald-600 text-white"
           >
             {saving ? (
               <>
@@ -389,7 +518,7 @@ export const OrderDetailDialog = ({
                 Enregistrement...
               </>
             ) : (
-              "Enregistrer"
+              "Enregistrer les modifications"
             )}
           </Button>
         </div>

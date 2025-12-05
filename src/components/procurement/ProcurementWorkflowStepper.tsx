@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,7 +20,8 @@ import {
   Building2, 
   CheckCircle,
   XCircle,
-  ChevronRight
+  ChevronRight,
+  AlertTriangle
 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { Database } from "@/integrations/supabase/types";
@@ -31,14 +33,14 @@ interface ProcurementWorkflowStepperProps {
   onStageChange: (stage: ProcurementStage) => void;
 }
 
-const STAGES: { key: ProcurementStage; label: string; icon: typeof FileEdit }[] = [
-  { key: "DRAFT", label: "Brouillon", icon: FileEdit },
-  { key: "SUPPLIER_SELECTION", label: "Fournisseur", icon: Users },
-  { key: "ORDER_PLACED", label: "Commandé", icon: ShoppingCart },
-  { key: "PAYMENT_VERIFIED", label: "Payé", icon: CreditCard },
-  { key: "IN_TRANSIT", label: "En transit", icon: Truck },
-  { key: "CUSTOMS_ENTRY", label: "Douane", icon: Building2 },
-  { key: "RECEIVED", label: "Reçu", icon: CheckCircle },
+const STAGES: { key: ProcurementStage; label: string; shortLabel: string; icon: typeof FileEdit; color: string }[] = [
+  { key: "DRAFT", label: "Brouillon", shortLabel: "Brouillon", icon: FileEdit, color: "gray" },
+  { key: "SUPPLIER_SELECTION", label: "Sélection fournisseur", shortLabel: "Fournisseur", icon: Users, color: "blue" },
+  { key: "ORDER_PLACED", label: "Commande passée", shortLabel: "Commandé", icon: ShoppingCart, color: "cyan" },
+  { key: "PAYMENT_VERIFIED", label: "Paiement vérifié", shortLabel: "Payé", icon: CreditCard, color: "emerald" },
+  { key: "IN_TRANSIT", label: "En transit", shortLabel: "Transit", icon: Truck, color: "amber" },
+  { key: "CUSTOMS_ENTRY", label: "En douane", shortLabel: "Douane", icon: Building2, color: "orange" },
+  { key: "RECEIVED", label: "Reçu", shortLabel: "Reçu", icon: CheckCircle, color: "green" },
 ];
 
 const getStageIndex = (stage: ProcurementStage): number => {
@@ -80,11 +82,24 @@ export const ProcurementWorkflowStepper = ({
     setConfirmDialog({ open: false, stage: null, action: "advance" });
   };
 
+  const nextStage = currentIndex < STAGES.length - 1 ? STAGES[currentIndex + 1] : null;
+
   return (
     <div className="space-y-4">
       {/* Stepper */}
-      <div className="relative">
-        <div className="flex items-center justify-between">
+      <div className="relative px-2">
+        {/* Progress line background */}
+        <div className="absolute top-5 left-0 right-0 h-0.5 bg-muted mx-7" />
+        
+        {/* Progress line filled */}
+        <motion.div 
+          className="absolute top-5 left-0 h-0.5 bg-emerald-500 mx-7"
+          initial={{ width: "0%" }}
+          animate={{ width: `${(currentIndex / (STAGES.length - 1)) * 100}%` }}
+          transition={{ duration: 0.5, ease: "easeInOut" }}
+        />
+
+        <div className="flex items-start justify-between relative">
           {STAGES.map((stage, index) => {
             const Icon = stage.icon;
             const isActive = index === currentIndex;
@@ -92,46 +107,49 @@ export const ProcurementWorkflowStepper = ({
             const isFuture = index > currentIndex;
 
             return (
-              <div key={stage.key} className="flex items-center flex-1 last:flex-initial">
+              <div key={stage.key} className="flex flex-col items-center relative z-10">
                 <motion.div
-                  className={`relative flex flex-col items-center ${
-                    isCancelled ? "opacity-50" : ""
-                  }`}
                   initial={false}
                   animate={{
-                    scale: isActive ? 1.1 : 1,
+                    scale: isActive ? 1.15 : 1,
                   }}
                   transition={{ type: "spring", stiffness: 300 }}
+                  className={`relative ${isCancelled ? "opacity-40" : ""}`}
                 >
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${
+                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 border-2 ${
                       isComplete
-                        ? "bg-emerald-500 text-white"
+                        ? "bg-emerald-500 border-emerald-500 text-white shadow-lg shadow-emerald-500/30"
                         : isActive
-                        ? "bg-emerald-500/20 text-emerald-500 ring-2 ring-emerald-500"
-                        : "bg-muted text-muted-foreground"
+                        ? "bg-emerald-500/10 border-emerald-500 text-emerald-500"
+                        : "bg-muted border-muted text-muted-foreground"
                     }`}
                   >
-                    <Icon className="h-5 w-5" />
+                    {isComplete ? (
+                      <CheckCircle className="h-5 w-5" />
+                    ) : (
+                      <Icon className="h-4 w-4" />
+                    )}
                   </div>
-                  <span
-                    className={`text-xs mt-2 font-medium whitespace-nowrap ${
-                      isActive ? "text-emerald-500" : "text-muted-foreground"
-                    }`}
-                  >
-                    {stage.label}
-                  </span>
+                  
+                  {/* Pulse animation for active step */}
+                  {isActive && !isCancelled && (
+                    <motion.div
+                      className="absolute inset-0 rounded-full border-2 border-emerald-500"
+                      initial={{ scale: 1, opacity: 1 }}
+                      animate={{ scale: 1.5, opacity: 0 }}
+                      transition={{ duration: 1.5, repeat: Infinity }}
+                    />
+                  )}
                 </motion.div>
                 
-                {index < STAGES.length - 1 && (
-                  <div className="flex-1 mx-2">
-                    <div
-                      className={`h-1 rounded-full transition-all duration-300 ${
-                        isComplete ? "bg-emerald-500" : "bg-muted"
-                      }`}
-                    />
-                  </div>
-                )}
+                <span
+                  className={`text-xs mt-2 font-medium whitespace-nowrap transition-colors ${
+                    isActive ? "text-emerald-500" : isComplete ? "text-foreground" : "text-muted-foreground"
+                  } ${isCancelled ? "opacity-40" : ""}`}
+                >
+                  {stage.shortLabel}
+                </span>
               </div>
             );
           })}
@@ -143,7 +161,7 @@ export const ProcurementWorkflowStepper = ({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-center gap-2 p-3 rounded-lg bg-red-500/10 border border-red-500/30"
+          className="flex items-center justify-center gap-2 p-4 rounded-xl bg-red-500/10 border border-red-500/30"
         >
           <XCircle className="h-5 w-5 text-red-500" />
           <span className="font-medium text-red-500">Commande annulée</span>
@@ -155,7 +173,7 @@ export const ProcurementWorkflowStepper = ({
         <motion.div
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-center gap-2 p-3 rounded-lg bg-green-500/10 border border-green-500/30"
+          className="flex items-center justify-center gap-2 p-4 rounded-xl bg-green-500/10 border border-green-500/30"
         >
           <CheckCircle className="h-5 w-5 text-green-500" />
           <span className="font-medium text-green-500">Commande reçue et terminée</span>
@@ -168,19 +186,21 @@ export const ProcurementWorkflowStepper = ({
           <Button
             variant="outline"
             onClick={handleCancel}
-            className="text-red-500 border-red-500/30 hover:bg-red-500/10"
+            className="text-red-500 border-red-500/30 hover:bg-red-500/10 hover:border-red-500/50"
           >
             <XCircle className="h-4 w-4 mr-2" />
             Annuler la commande
           </Button>
           
-          <Button
-            onClick={handleAdvance}
-            className="bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-500 border border-emerald-500/30"
-          >
-            Passer à l'étape suivante
-            <ChevronRight className="h-4 w-4 ml-2" />
-          </Button>
+          {nextStage && (
+            <Button
+              onClick={handleAdvance}
+              className="bg-emerald-500 hover:bg-emerald-600 text-white gap-2"
+            >
+              Passer à: {nextStage.label}
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          )}
         </div>
       )}
 
@@ -188,17 +208,30 @@ export const ProcurementWorkflowStepper = ({
       <AlertDialog open={confirmDialog.open} onOpenChange={(open) => setConfirmDialog({ ...confirmDialog, open })}>
         <AlertDialogContent className="glass border border-border/50">
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              {confirmDialog.action === "cancel" 
-                ? "Annuler la commande ?" 
-                : "Confirmer le changement d'étape ?"}
+            <AlertDialogTitle className="flex items-center gap-2">
+              {confirmDialog.action === "cancel" ? (
+                <>
+                  <AlertTriangle className="h-5 w-5 text-red-500" />
+                  Annuler la commande ?
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-5 w-5 text-emerald-500" />
+                  Confirmer le changement d'étape ?
+                </>
+              )}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmDialog.action === "cancel"
-                ? "Cette action est irréversible. La commande sera marquée comme annulée."
-                : `La commande passera à l'étape "${
-                    STAGES.find((s) => s.key === confirmDialog.stage)?.label || ""
-                  }".`}
+                ? "Cette action est irréversible. La commande sera définitivement marquée comme annulée et ne pourra plus être modifiée."
+                : (
+                  <div className="space-y-2">
+                    <p>La commande passera à l'étape:</p>
+                    <Badge className="bg-emerald-500/20 text-emerald-500 border-0">
+                      {STAGES.find((s) => s.key === confirmDialog.stage)?.label || ""}
+                    </Badge>
+                  </div>
+                )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -207,11 +240,11 @@ export const ProcurementWorkflowStepper = ({
               onClick={confirmAction}
               className={
                 confirmDialog.action === "cancel"
-                  ? "bg-red-500/20 text-red-500 hover:bg-red-500/30"
-                  : "bg-emerald-500/20 text-emerald-500 hover:bg-emerald-500/30"
+                  ? "bg-red-500 hover:bg-red-600 text-white"
+                  : "bg-emerald-500 hover:bg-emerald-600 text-white"
               }
             >
-              Confirmer
+              {confirmDialog.action === "cancel" ? "Confirmer l'annulation" : "Confirmer"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
