@@ -9,12 +9,15 @@ interface SubmissionWindowStatus {
   daysRemaining: number;
   loading: boolean;
   currentMonth: string;
+  hasExceptionalAccess: boolean;
+  exceptionalAccessReason: string | null;
+  exceptionalAccessUntil: Date | null;
 }
 
 // Djibouti: Weekend is Friday (5) and Saturday (6)
 const DJIBOUTI_WEEKEND_DAYS = [5, 6];
 
-export function useSubmissionWindow(): SubmissionWindowStatus {
+export function useSubmissionWindow(locationId?: string): SubmissionWindowStatus {
   const [status, setStatus] = useState<SubmissionWindowStatus>({
     isOpen: false,
     windowStart: null,
@@ -23,11 +26,14 @@ export function useSubmissionWindow(): SubmissionWindowStatus {
     daysRemaining: 0,
     loading: true,
     currentMonth: "",
+    hasExceptionalAccess: false,
+    exceptionalAccessReason: null,
+    exceptionalAccessUntil: null,
   });
 
   useEffect(() => {
     calculateSubmissionWindow();
-  }, []);
+  }, [locationId]);
 
   const calculateSubmissionWindow = async () => {
     try {
@@ -55,7 +61,32 @@ export function useSubmissionWindow(): SubmissionWindowStatus {
       const windowInfo = calculateWindowForMonth(currentYear, currentMonth, holidayDates);
       
       // Check if we're within the window
-      const isOpen = today >= windowInfo.windowStart && today <= windowInfo.windowEnd;
+      let isOpen = today >= windowInfo.windowStart && today <= windowInfo.windowEnd;
+
+      // Check for exceptional access if locationId is provided
+      let hasExceptionalAccess = false;
+      let exceptionalAccessReason: string | null = null;
+      let exceptionalAccessUntil: Date | null = null;
+
+      if (locationId && !isOpen) {
+        const { data: exceptionalAccess, error: accessError } = await supabase
+          .from("exceptional_submission_access")
+          .select("*")
+          .eq("location_id", locationId)
+          .eq("is_active", true)
+          .gte("valid_until", new Date().toISOString())
+          .lte("valid_from", new Date().toISOString())
+          .order("valid_until", { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (!accessError && exceptionalAccess) {
+          hasExceptionalAccess = true;
+          exceptionalAccessReason = exceptionalAccess.reason;
+          exceptionalAccessUntil = new Date(exceptionalAccess.valid_until);
+          isOpen = true; // Override: window is now open due to exceptional access
+        }
+      }
 
       // If not open, calculate next window
       let nextWindowStart: Date | null = null;
@@ -75,8 +106,10 @@ export function useSubmissionWindow(): SubmissionWindowStatus {
 
       // Calculate days remaining if window is open
       let daysRemaining = 0;
-      if (isOpen) {
+      if (isOpen && !hasExceptionalAccess) {
         daysRemaining = Math.ceil((windowInfo.windowEnd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      } else if (hasExceptionalAccess && exceptionalAccessUntil) {
+        daysRemaining = Math.ceil((exceptionalAccessUntil.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       }
 
       const monthNames = [
@@ -92,6 +125,9 @@ export function useSubmissionWindow(): SubmissionWindowStatus {
         daysRemaining,
         loading: false,
         currentMonth: monthNames[currentMonth],
+        hasExceptionalAccess,
+        exceptionalAccessReason,
+        exceptionalAccessUntil,
       });
     } catch (error) {
       console.error("Error calculating submission window:", error);

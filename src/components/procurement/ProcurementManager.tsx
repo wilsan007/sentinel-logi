@@ -26,7 +26,8 @@ import {
   Calendar,
   DollarSign,
   Building2,
-  ClipboardList
+  ClipboardList,
+  ShieldAlert
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -39,6 +40,7 @@ import { CreateOrderDialog } from "./CreateOrderDialog";
 import { SmartPurchaseWizard } from "./SmartPurchaseWizard";
 import { OrderDetailDialog } from "./OrderDetailDialog";
 import { RequestsManagementDialog } from "./RequestsManagementDialog";
+import { GrantExceptionalAccessDialog } from "./GrantExceptionalAccessDialog";
 import { Progress } from "@/components/ui/progress";
 
 interface ProcurementManagerProps {
@@ -81,6 +83,7 @@ export function ProcurementManager({ locationId }: ProcurementManagerProps) {
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
   const [requestsDialogOpen, setRequestsDialogOpen] = useState(false);
+  const [exceptionalAccessDialogOpen, setExceptionalAccessDialogOpen] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -257,6 +260,14 @@ export function ProcurementManager({ locationId }: ProcurementManagerProps) {
               >
                 <ClipboardList className="h-4 w-4" />
                 Demandes des camps
+              </Button>
+              <Button
+                onClick={() => setExceptionalAccessDialogOpen(true)}
+                variant="outline"
+                className="gap-2 bg-gradient-to-r from-amber-500/20 to-orange-500/20 hover:from-amber-500/30 hover:to-orange-500/30 text-amber-400 border border-amber-500/30"
+              >
+                <ShieldAlert className="h-4 w-4" />
+                Accès urgence
               </Button>
               <Button
                 onClick={() => setSmartWizardOpen(true)}
@@ -477,6 +488,11 @@ export function ProcurementManager({ locationId }: ProcurementManagerProps) {
         open={requestsDialogOpen}
         onOpenChange={setRequestsDialogOpen}
         onRequestsUpdated={loadOrders}
+      />
+
+      <GrantExceptionalAccessDialog
+        open={exceptionalAccessDialogOpen}
+        onOpenChange={setExceptionalAccessDialogOpen}
       />
     </div>
   );
