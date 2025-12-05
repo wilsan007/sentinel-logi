@@ -31,6 +31,7 @@ import { ReceiveOrderDialog } from "./ReceiveOrderDialog";
 import { QuotesManager } from "./QuotesManager";
 import { VerificationManager } from "./VerificationManager";
 import { NationalPaymentTracking } from "./NationalPaymentTracking";
+import { StageHistoryTimeline } from "./StageHistoryTimeline";
 import type { Database } from "@/integrations/supabase/types";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -500,6 +501,9 @@ export const OrderDetailDialog = ({
                       className="glass border-border/50 min-h-[100px] focus:border-emerald-500/50 disabled:opacity-60"
                     />
                   </div>
+                  
+                  {/* Stage History Timeline */}
+                  <StageHistoryTimeline orderId={orderId!} />
                 </TabsContent>
 
                 <TabsContent value="supplier" className="mt-4">
