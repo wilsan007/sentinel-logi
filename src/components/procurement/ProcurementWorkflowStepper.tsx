@@ -30,7 +30,7 @@ type ProcurementStage = Database["public"]["Enums"]["procurement_stage"];
 
 interface ProcurementWorkflowStepperProps {
   currentStage: ProcurementStage;
-  onStageChange: (stage: ProcurementStage) => void;
+  onStageChange?: (stage: ProcurementStage) => void;
 }
 
 const STAGES: { key: ProcurementStage; label: string; shortLabel: string; icon: typeof FileEdit; color: string }[] = [
@@ -63,20 +63,20 @@ export const ProcurementWorkflowStepper = ({
   const isCompleted = currentStage === "RECEIVED";
 
   const handleAdvance = () => {
-    if (currentIndex < STAGES.length - 1 && !isCancelled && !isCompleted) {
+    if (currentIndex < STAGES.length - 1 && !isCancelled && !isCompleted && onStageChange) {
       const nextStage = STAGES[currentIndex + 1].key;
       setConfirmDialog({ open: true, stage: nextStage, action: "advance" });
     }
   };
 
   const handleCancel = () => {
-    if (!isCancelled && !isCompleted) {
+    if (!isCancelled && !isCompleted && onStageChange) {
       setConfirmDialog({ open: true, stage: "CANCELLED", action: "cancel" });
     }
   };
 
   const confirmAction = () => {
-    if (confirmDialog.stage) {
+    if (confirmDialog.stage && onStageChange) {
       onStageChange(confirmDialog.stage);
     }
     setConfirmDialog({ open: false, stage: null, action: "advance" });
@@ -180,8 +180,8 @@ export const ProcurementWorkflowStepper = ({
         </motion.div>
       )}
 
-      {/* Action buttons */}
-      {!isCancelled && !isCompleted && (
+      {/* Action buttons - only show if onStageChange is provided */}
+      {!isCancelled && !isCompleted && onStageChange && (
         <div className="flex justify-between items-center pt-2">
           <Button
             variant="outline"

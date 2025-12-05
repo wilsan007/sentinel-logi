@@ -26,6 +26,7 @@ interface OrderItemsManagerProps {
   orderId: string;
   currency?: string;
   onTotalChange?: (total: number) => void;
+  readOnly?: boolean;
 }
 
 interface StockItem {
@@ -47,7 +48,7 @@ interface OrderItem {
   stock_items?: StockItem;
 }
 
-export const OrderItemsManager = ({ orderId, currency = "XAF", onTotalChange }: OrderItemsManagerProps) => {
+export const OrderItemsManager = ({ orderId, currency = "XAF", onTotalChange, readOnly }: OrderItemsManagerProps) => {
   const [items, setItems] = useState<OrderItem[]>([]);
   const [stockItems, setStockItems] = useState<StockItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -224,74 +225,76 @@ export const OrderItemsManager = ({ orderId, currency = "XAF", onTotalChange }: 
 
   return (
     <div className="space-y-4">
-      {/* Add new item form */}
-      <Card className="glass border-emerald-500/20">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm flex items-center gap-2">
-            <Plus className="h-4 w-4 text-emerald-500" />
-            Ajouter un article
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-end gap-3">
-            <div className="flex-1 space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Article</label>
-              <Select
-                value={newItem.stock_item_id}
-                onValueChange={(value) => setNewItem({ ...newItem, stock_item_id: value })}
-              >
-                <SelectTrigger className="glass border-border/50">
-                  <SelectValue placeholder="Sélectionner un article..." />
-                </SelectTrigger>
-                <SelectContent className="max-h-[300px]">
-                  {Object.entries(groupedStockItems).map(([category, categoryItems]) => (
-                    <div key={category}>
-                      <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
-                        {category === "GEAR" ? "🎽 Habillement" : "🍽️ Alimentaire"}
+      {/* Add new item form - hide in read-only mode */}
+      {!readOnly && (
+        <Card className="glass border-emerald-500/20">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Plus className="h-4 w-4 text-emerald-500" />
+              Ajouter un article
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-end gap-3">
+              <div className="flex-1 space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Article</label>
+                <Select
+                  value={newItem.stock_item_id}
+                  onValueChange={(value) => setNewItem({ ...newItem, stock_item_id: value })}
+                >
+                  <SelectTrigger className="glass border-border/50">
+                    <SelectValue placeholder="Sélectionner un article..." />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-[300px]">
+                    {Object.entries(groupedStockItems).map(([category, categoryItems]) => (
+                      <div key={category}>
+                        <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
+                          {category === "GEAR" ? "🎽 Habillement" : "🍽️ Alimentaire"}
+                        </div>
+                        {categoryItems
+                          .filter((i) => !items.some((existing) => existing.stock_item_id === i.id))
+                          .map((item) => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.type} {item.sous_type ? `- ${item.sous_type}` : ""}
+                            </SelectItem>
+                          ))}
                       </div>
-                      {categoryItems
-                        .filter((i) => !items.some((existing) => existing.stock_item_id === i.id))
-                        .map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.type} {item.sous_type ? `- ${item.sous_type}` : ""}
-                          </SelectItem>
-                        ))}
-                    </div>
-                  ))}
-                </SelectContent>
-              </Select>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="w-28 space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Quantité</label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={newItem.quantity_ordered}
+                  onChange={(e) => setNewItem({ ...newItem, quantity_ordered: parseInt(e.target.value) || 1 })}
+                  className="glass border-border/50 text-center"
+                />
+              </div>
+              <div className="w-36 space-y-2">
+                <label className="text-xs font-medium text-muted-foreground">Prix unitaire ({currency})</label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={newItem.unit_price}
+                  onChange={(e) => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
+                  className="glass border-border/50 text-right"
+                />
+              </div>
+              <Button
+                onClick={handleAddItem}
+                disabled={saving || !newItem.stock_item_id}
+                className="bg-emerald-500 hover:bg-emerald-600 text-white"
+              >
+                {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
+                Ajouter
+              </Button>
             </div>
-            <div className="w-28 space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Quantité</label>
-              <Input
-                type="number"
-                min={1}
-                value={newItem.quantity_ordered}
-                onChange={(e) => setNewItem({ ...newItem, quantity_ordered: parseInt(e.target.value) || 1 })}
-                className="glass border-border/50 text-center"
-              />
-            </div>
-            <div className="w-36 space-y-2">
-              <label className="text-xs font-medium text-muted-foreground">Prix unitaire ({currency})</label>
-              <Input
-                type="number"
-                min={0}
-                value={newItem.unit_price}
-                onChange={(e) => setNewItem({ ...newItem, unit_price: parseFloat(e.target.value) || 0 })}
-                className="glass border-border/50 text-right"
-              />
-            </div>
-            <Button
-              onClick={handleAddItem}
-              disabled={saving || !newItem.stock_item_id}
-              className="bg-emerald-500 hover:bg-emerald-600 text-white"
-            >
-              {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
-              Ajouter
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Items list */}
       <div className="space-y-2">
@@ -322,24 +325,32 @@ export const OrderItemsManager = ({ orderId, currency = "XAF", onTotalChange }: 
                     </div>
                     <div className="flex items-center gap-3">
                       <div className="w-24">
-                        <Input
-                          type="number"
-                          min={1}
-                          value={item.quantity_ordered}
-                          onChange={(e) => handleUpdateItem(item.id, "quantity_ordered", parseInt(e.target.value) || 1)}
-                          className="glass border-border/50 text-center h-9"
-                        />
+                        {readOnly ? (
+                          <p className="text-lg font-bold text-center">{item.quantity_ordered}</p>
+                        ) : (
+                          <Input
+                            type="number"
+                            min={1}
+                            value={item.quantity_ordered}
+                            onChange={(e) => handleUpdateItem(item.id, "quantity_ordered", parseInt(e.target.value) || 1)}
+                            className="glass border-border/50 text-center h-9"
+                          />
+                        )}
                         <p className="text-xs text-muted-foreground text-center mt-1">Qté</p>
                       </div>
                       <div className="text-muted-foreground">×</div>
                       <div className="w-32">
-                        <Input
-                          type="number"
-                          min={0}
-                          value={item.unit_price || 0}
-                          onChange={(e) => handleUpdateItem(item.id, "unit_price", parseFloat(e.target.value) || 0)}
-                          className="glass border-border/50 text-right h-9"
-                        />
+                        {readOnly ? (
+                          <p className="text-lg font-bold text-right">{(item.unit_price || 0).toLocaleString()}</p>
+                        ) : (
+                          <Input
+                            type="number"
+                            min={0}
+                            value={item.unit_price || 0}
+                            onChange={(e) => handleUpdateItem(item.id, "unit_price", parseFloat(e.target.value) || 0)}
+                            className="glass border-border/50 text-right h-9"
+                          />
+                        )}
                         <p className="text-xs text-muted-foreground text-center mt-1">Prix unit.</p>
                       </div>
                       <div className="text-muted-foreground">=</div>
@@ -349,14 +360,16 @@ export const OrderItemsManager = ({ orderId, currency = "XAF", onTotalChange }: 
                         </p>
                         <p className="text-xs text-muted-foreground">{currency}</p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteItem(item.id)}
-                        className="text-red-500 hover:text-red-600 hover:bg-red-500/10 h-9 w-9 p-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {!readOnly && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteItem(item.id)}
+                          className="text-red-500 hover:text-red-600 hover:bg-red-500/10 h-9 w-9 p-0"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </CardContent>
