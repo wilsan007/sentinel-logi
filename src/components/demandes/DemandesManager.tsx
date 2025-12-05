@@ -16,13 +16,15 @@ import {
   Loader2,
   AlertTriangle,
   Send,
-  Lock
+  Lock,
+  ShieldAlert
 } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import { CreateDemandeDialog } from "./CreateDemandeDialog";
 import { SubmissionWindowBanner } from "./SubmissionWindowBanner";
+import { RequestExceptionalAccessDialog } from "./RequestExceptionalAccessDialog";
 import { useSubmissionWindow } from "@/hooks/useSubmissionWindow";
 
 interface DemandesManagerProps {
@@ -57,6 +59,7 @@ export function DemandesManager({ locationId }: DemandesManagerProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("en_attente");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [accessRequestDialogOpen, setAccessRequestDialogOpen] = useState(false);
   const { toast } = useToast();
   const submissionWindow = useSubmissionWindow(locationId);
 
@@ -194,6 +197,16 @@ export function DemandesManager({ locationId }: DemandesManagerProps) {
             </>
           )}
         </Button>
+        {!submissionWindow.isOpen && !submissionWindow.hasExceptionalAccess && (
+          <Button 
+            onClick={() => setAccessRequestDialogOpen(true)}
+            variant="outline"
+            className="gap-2 border-amber-500/50 text-amber-500 hover:bg-amber-500/10"
+          >
+            <ShieldAlert className="h-4 w-4" />
+            Accès urgence
+          </Button>
+        )}
       </div>
 
       {/* Tabs */}
@@ -340,6 +353,13 @@ export function DemandesManager({ locationId }: DemandesManagerProps) {
             description: "Votre demande a été envoyée au Stock Central",
           });
         }}
+      />
+
+      {/* Request Exceptional Access Dialog */}
+      <RequestExceptionalAccessDialog
+        open={accessRequestDialogOpen}
+        onOpenChange={setAccessRequestDialogOpen}
+        locationId={locationId}
       />
     </div>
   );
