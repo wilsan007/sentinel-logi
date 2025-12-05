@@ -25,7 +25,8 @@ import {
   ArrowUpRight,
   Calendar,
   DollarSign,
-  Building2
+  Building2,
+  ClipboardList
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -39,7 +40,6 @@ import { SmartPurchaseWizard } from "./SmartPurchaseWizard";
 import { OrderDetailDialog } from "./OrderDetailDialog";
 import { RequestsManagementDialog } from "./RequestsManagementDialog";
 import { Progress } from "@/components/ui/progress";
-import { ClipboardList } from "lucide-react";
 
 interface ProcurementManagerProps {
   locationId: string;
