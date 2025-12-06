@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ArrowLeft, Download, FileSpreadsheet, Loader2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ArrowLeft, Download, FileSpreadsheet, FileJson, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
@@ -29,11 +30,34 @@ const TABLES = [
   { name: 'suspicious_activities', label: 'Activités Suspectes', description: 'Alertes de sécurité' },
 ];
 
+// Définition des requêtes avec relations pour l'export JSON
+const RELATIONS_QUERIES: Record<string, string> = {
+  locations: '*',
+  personnel: '*, location:locations(nom, code)',
+  stock_items: '*',
+  item_variants: '*, stock_item:stock_items(type, sous_type, categorie), location:locations(nom, code)',
+  inventory_batches: '*, item_variant:item_variants(taille, couleur, genre, stock_item:stock_items(type, sous_type)), location:locations(nom, code), supplier:suppliers(name, code)',
+  allocations: '*, personnel:personnel(nom, prenom, matricule, grade), item_variant:item_variants(taille, couleur, genre, stock_item:stock_items(type, sous_type))',
+  suppliers: '*',
+  procurement_orders: '*, supplier:suppliers(name, code, country), location:locations(nom, code), items:procurement_order_items(quantity_ordered, unit_price, stock_item:stock_items(type, sous_type))',
+  procurement_order_items: '*, order:procurement_orders(order_number, stage), stock_item:stock_items(type, sous_type, categorie)',
+  procurement_quotes: '*, order:procurement_orders(order_number), supplier:suppliers(name, code)',
+  procurement_stage_history: '*, order:procurement_orders(order_number)',
+  requests: '*, stock_item:stock_items(type, sous_type, categorie), location:locations(nom, code)',
+  profiles: '*',
+  user_roles: '*, location:locations(nom, code)',
+  djibouti_holidays: '*',
+  exceptional_access_requests: '*, location:locations(nom, code)',
+  exceptional_submission_access: '*, location:locations(nom, code)',
+  suspicious_activities: '*',
+};
+
 const Export = () => {
   const navigate = useNavigate();
   const [selectedTables, setSelectedTables] = useState<string[]>(TABLES.map(t => t.name));
   const [loading, setLoading] = useState(false);
   const [exportingTable, setExportingTable] = useState<string | null>(null);
+  const [exportMode, setExportMode] = useState<'csv' | 'json'>('csv');
 
   const toggleTable = (tableName: string) => {
     setSelectedTables(prev => 
@@ -46,7 +70,7 @@ const Export = () => {
   const selectAll = () => setSelectedTables(TABLES.map(t => t.name));
   const deselectAll = () => setSelectedTables([]);
 
-  const convertToCSV = (data: any[], tableName: string): string => {
+  const convertToCSV = (data: any[]): string => {
     if (!data || data.length === 0) return '';
     
     const headers = Object.keys(data[0]);
@@ -68,9 +92,9 @@ const Export = () => {
     return csvRows.join('\n');
   };
 
-  const downloadCSV = (csv: string, filename: string) => {
+  const downloadFile = (content: string, filename: string, type: string) => {
     const BOM = '\uFEFF';
-    const blob = new Blob([BOM + csv], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob([BOM + content], { type: `${type};charset=utf-8;` });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = filename;
@@ -78,7 +102,7 @@ const Export = () => {
     URL.revokeObjectURL(link.href);
   };
 
-  const exportTable = async (tableName: string) => {
+  const exportTableCSV = async (tableName: string) => {
     setExportingTable(tableName);
     try {
       const { data, error } = await supabase
@@ -92,9 +116,9 @@ const Export = () => {
         return;
       }
 
-      const csv = convertToCSV(data, tableName);
+      const csv = convertToCSV(data);
       const date = new Date().toISOString().split('T')[0];
-      downloadCSV(csv, `${tableName}_${date}.csv`);
+      downloadFile(csv, `${tableName}_${date}.csv`, 'text/csv');
       toast.success(`${tableName} exporté (${data.length} lignes)`);
     } catch (error: any) {
       console.error(`Erreur export ${tableName}:`, error);
@@ -104,7 +128,42 @@ const Export = () => {
     }
   };
 
-  const exportSelected = async () => {
+  const exportTableJSON = async (tableName: string) => {
+    setExportingTable(tableName);
+    try {
+      const query = RELATIONS_QUERIES[tableName] || '*';
+      const { data, error } = await supabase
+        .from(tableName as any)
+        .select(query);
+      
+      if (error) throw error;
+      
+      if (!data || data.length === 0) {
+        toast.info(`Table ${tableName} est vide`);
+        return;
+      }
+
+      const json = JSON.stringify(data, null, 2);
+      const date = new Date().toISOString().split('T')[0];
+      downloadFile(json, `${tableName}_relations_${date}.json`, 'application/json');
+      toast.success(`${tableName} exporté avec relations (${data.length} lignes)`);
+    } catch (error: any) {
+      console.error(`Erreur export ${tableName}:`, error);
+      toast.error(`Erreur: ${error.message}`);
+    } finally {
+      setExportingTable(null);
+    }
+  };
+
+  const exportTable = (tableName: string) => {
+    if (exportMode === 'csv') {
+      exportTableCSV(tableName);
+    } else {
+      exportTableJSON(tableName);
+    }
+  };
+
+  const exportSelectedCSV = async () => {
     if (selectedTables.length === 0) {
       toast.warning('Sélectionnez au moins une table');
       return;
@@ -127,8 +186,8 @@ const Export = () => {
         }
         
         if (data && data.length > 0) {
-          const csv = convertToCSV(data, tableName);
-          downloadCSV(csv, `${tableName}_${date}.csv`);
+          const csv = convertToCSV(data);
+          downloadFile(csv, `${tableName}_${date}.csv`, 'text/csv');
           successCount++;
         }
       } catch (error) {
@@ -138,12 +197,65 @@ const Export = () => {
 
     setExportingTable(null);
     setLoading(false);
-    toast.success(`${successCount} tables exportées avec succès`);
+    toast.success(`${successCount} tables CSV exportées`);
   };
 
-  const exportAll = async () => {
-    setSelectedTables(TABLES.map(t => t.name));
-    setTimeout(() => exportSelected(), 100);
+  const exportAllJSON = async () => {
+    if (selectedTables.length === 0) {
+      toast.warning('Sélectionnez au moins une table');
+      return;
+    }
+
+    setLoading(true);
+    const date = new Date().toISOString().split('T')[0];
+    const allData: Record<string, any[]> = {};
+    let successCount = 0;
+
+    for (const tableName of selectedTables) {
+      setExportingTable(tableName);
+      try {
+        const query = RELATIONS_QUERIES[tableName] || '*';
+        const { data, error } = await supabase
+          .from(tableName as any)
+          .select(query);
+        
+        if (error) {
+          console.error(`Erreur ${tableName}:`, error);
+          continue;
+        }
+        
+        if (data && data.length > 0) {
+          allData[tableName] = data;
+          successCount++;
+        }
+      } catch (error) {
+        console.error(`Erreur export ${tableName}:`, error);
+      }
+    }
+
+    // Export un seul fichier JSON avec toutes les tables
+    const json = JSON.stringify({
+      exportDate: new Date().toISOString(),
+      tables: allData,
+      metadata: {
+        totalTables: successCount,
+        tablesIncluded: Object.keys(allData),
+      }
+    }, null, 2);
+    
+    downloadFile(json, `sentinel_full_export_${date}.json`, 'application/json');
+
+    setExportingTable(null);
+    setLoading(false);
+    toast.success(`Export JSON complet: ${successCount} tables avec relations`);
+  };
+
+  const exportSelected = () => {
+    if (exportMode === 'csv') {
+      exportSelectedCSV();
+    } else {
+      exportAllJSON();
+    }
   };
 
   return (
@@ -159,16 +271,40 @@ const Export = () => {
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-foreground">Export des Données</h1>
-            <p className="text-muted-foreground">Téléchargez les données en format CSV</p>
+            <p className="text-muted-foreground">Téléchargez les données en format CSV ou JSON</p>
           </div>
         </motion.div>
+
+        {/* Tabs pour choisir le format */}
+        <Tabs value={exportMode} onValueChange={(v) => setExportMode(v as 'csv' | 'json')} className="mb-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="csv" className="flex items-center gap-2">
+              <FileSpreadsheet className="h-4 w-4" />
+              CSV (Tables séparées)
+            </TabsTrigger>
+            <TabsTrigger value="json" className="flex items-center gap-2">
+              <FileJson className="h-4 w-4" />
+              JSON (Avec relations)
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <Card className="mb-6 border-primary/20 bg-card/50 backdrop-blur">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-primary" />
-              Actions Rapides
+              {exportMode === 'csv' ? (
+                <FileSpreadsheet className="h-5 w-5 text-primary" />
+              ) : (
+                <FileJson className="h-5 w-5 text-emerald-500" />
+              )}
+              {exportMode === 'csv' ? 'Export CSV' : 'Export JSON avec Relations'}
             </CardTitle>
+            <p className="text-sm text-muted-foreground">
+              {exportMode === 'csv' 
+                ? 'Export des tables en fichiers CSV séparés (sans relations)'
+                : 'Export complet en un seul fichier JSON avec toutes les relations entre tables'
+              }
+            </p>
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button onClick={selectAll} variant="outline" size="sm">
@@ -180,7 +316,7 @@ const Export = () => {
             <Button 
               onClick={exportSelected} 
               disabled={loading || selectedTables.length === 0}
-              className="ml-auto"
+              className={`ml-auto ${exportMode === 'json' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
             >
               {loading ? (
                 <>
@@ -190,7 +326,10 @@ const Export = () => {
               ) : (
                 <>
                   <Download className="h-4 w-4 mr-2" />
-                  Exporter la sélection ({selectedTables.length})
+                  {exportMode === 'csv' 
+                    ? `Exporter CSV (${selectedTables.length})`
+                    : `Exporter JSON complet (${selectedTables.length})`
+                  }
                 </>
               )}
             </Button>
@@ -207,7 +346,11 @@ const Export = () => {
             >
               <Card 
                 className={`transition-all cursor-pointer hover:border-primary/50 ${
-                  selectedTables.includes(table.name) ? 'border-primary/30 bg-primary/5' : 'bg-card/30'
+                  selectedTables.includes(table.name) 
+                    ? exportMode === 'json' 
+                      ? 'border-emerald-500/30 bg-emerald-500/5' 
+                      : 'border-primary/30 bg-primary/5' 
+                    : 'bg-card/30'
                 }`}
                 onClick={() => toggleTable(table.name)}
               >
@@ -219,6 +362,11 @@ const Export = () => {
                   <div className="flex-1">
                     <h3 className="font-medium text-foreground">{table.label}</h3>
                     <p className="text-sm text-muted-foreground">{table.description}</p>
+                    {exportMode === 'json' && RELATIONS_QUERIES[table.name] !== '*' && (
+                      <p className="text-xs text-emerald-500 mt-1">
+                        ✓ Inclut les relations
+                      </p>
+                    )}
                   </div>
                   <Button 
                     variant="ghost" 
