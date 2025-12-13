@@ -105,6 +105,71 @@ export type Database = {
           },
         ]
       }
+      diagnostic_categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          nom: string
+          ordre: number | null
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          nom: string
+          ordre?: number | null
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          nom?: string
+          ordre?: number | null
+        }
+        Relationships: []
+      }
+      diagnostic_options: {
+        Row: {
+          category_id: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean | null
+          nom: string
+          ordre: number | null
+        }
+        Insert: {
+          category_id: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          nom: string
+          ordre?: number | null
+        }
+        Update: {
+          category_id?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          nom?: string
+          ordre?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "diagnostic_options_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "diagnostic_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       djibouti_holidays: {
         Row: {
           created_at: string
@@ -1136,6 +1201,108 @@ export type Database = {
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_diagnostic_items: {
+        Row: {
+          created_at: string
+          diagnostic_id: string
+          id: string
+          notes: string | null
+          option_id: string
+          severite: string | null
+        }
+        Insert: {
+          created_at?: string
+          diagnostic_id: string
+          id?: string
+          notes?: string | null
+          option_id: string
+          severite?: string | null
+        }
+        Update: {
+          created_at?: string
+          diagnostic_id?: string
+          id?: string
+          notes?: string | null
+          option_id?: string
+          severite?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_diagnostic_items_diagnostic_id_fkey"
+            columns: ["diagnostic_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_diagnostics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_diagnostic_items_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "diagnostic_options"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_diagnostics: {
+        Row: {
+          assigned_at: string | null
+          assigned_by: string | null
+          created_at: string
+          diagnostic_date: string | null
+          diagnostic_resume: string | null
+          id: string
+          impressions_conducteur_validees: boolean | null
+          intake_id: string
+          mecanicien_id: string | null
+          notes_mecanicien: string | null
+          statut: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          created_at?: string
+          diagnostic_date?: string | null
+          diagnostic_resume?: string | null
+          id?: string
+          impressions_conducteur_validees?: boolean | null
+          intake_id: string
+          mecanicien_id?: string | null
+          notes_mecanicien?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_at?: string | null
+          assigned_by?: string | null
+          created_at?: string
+          diagnostic_date?: string | null
+          diagnostic_resume?: string | null
+          id?: string
+          impressions_conducteur_validees?: boolean | null
+          intake_id?: string
+          mecanicien_id?: string | null
+          notes_mecanicien?: string | null
+          statut?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_diagnostics_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_garage_intakes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_diagnostics_mecanicien_id_fkey"
+            columns: ["mecanicien_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
             referencedColumns: ["id"]
           },
         ]
