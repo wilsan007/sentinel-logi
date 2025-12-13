@@ -1104,6 +1104,430 @@ export type Database = {
           },
         ]
       }
+      vehicle_documents: {
+        Row: {
+          cout: number | null
+          created_at: string
+          created_by: string | null
+          date_emission: string | null
+          date_expiration: string | null
+          document_type: Database["public"]["Enums"]["vehicle_document_type"]
+          document_url: string | null
+          id: string
+          notes: string | null
+          numero_document: string | null
+          organisme_emetteur: string | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          cout?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_emission?: string | null
+          date_expiration?: string | null
+          document_type: Database["public"]["Enums"]["vehicle_document_type"]
+          document_url?: string | null
+          id?: string
+          notes?: string | null
+          numero_document?: string | null
+          organisme_emetteur?: string | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          cout?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_emission?: string | null
+          date_expiration?: string | null
+          document_type?: Database["public"]["Enums"]["vehicle_document_type"]
+          document_url?: string | null
+          id?: string
+          notes?: string | null
+          numero_document?: string | null
+          organisme_emetteur?: string | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_documents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_fuel_logs: {
+        Row: {
+          conducteur_id: string | null
+          cout_total: number
+          created_at: string
+          date_plein: string
+          enregistre_par: string | null
+          id: string
+          kilometrage: number
+          litres: number
+          plein_complet: boolean | null
+          prix_litre: number
+          station: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          conducteur_id?: string | null
+          cout_total: number
+          created_at?: string
+          date_plein?: string
+          enregistre_par?: string | null
+          id?: string
+          kilometrage: number
+          litres: number
+          plein_complet?: boolean | null
+          prix_litre: number
+          station?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          conducteur_id?: string | null
+          cout_total?: number
+          created_at?: string
+          date_plein?: string
+          enregistre_par?: string | null
+          id?: string
+          kilometrage?: number
+          litres?: number
+          plein_complet?: boolean | null
+          prix_litre?: number
+          station?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_fuel_logs_conducteur_id_fkey"
+            columns: ["conducteur_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_fuel_logs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_incidents: {
+        Row: {
+          cloture_date: string | null
+          cloture_par: string | null
+          conducteur_responsable_id: string | null
+          cout_estimation: number | null
+          cout_reel: number | null
+          couvert_assurance: boolean | null
+          created_at: string
+          date_incident: string
+          declare_par: string | null
+          degre_responsabilite: string | null
+          description: string
+          expertise_date: string | null
+          expertise_rapport: string | null
+          id: string
+          lieu: string | null
+          montant_franchise: number | null
+          notes: string | null
+          numero_dossier_assurance: string | null
+          photos_urls: string[] | null
+          sanctions: string | null
+          status: Database["public"]["Enums"]["incident_status"]
+          tiers_implique: boolean | null
+          tiers_info: Json | null
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          cloture_date?: string | null
+          cloture_par?: string | null
+          conducteur_responsable_id?: string | null
+          cout_estimation?: number | null
+          cout_reel?: number | null
+          couvert_assurance?: boolean | null
+          created_at?: string
+          date_incident: string
+          declare_par?: string | null
+          degre_responsabilite?: string | null
+          description: string
+          expertise_date?: string | null
+          expertise_rapport?: string | null
+          id?: string
+          lieu?: string | null
+          montant_franchise?: number | null
+          notes?: string | null
+          numero_dossier_assurance?: string | null
+          photos_urls?: string[] | null
+          sanctions?: string | null
+          status?: Database["public"]["Enums"]["incident_status"]
+          tiers_implique?: boolean | null
+          tiers_info?: Json | null
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          cloture_date?: string | null
+          cloture_par?: string | null
+          conducteur_responsable_id?: string | null
+          cout_estimation?: number | null
+          cout_reel?: number | null
+          couvert_assurance?: boolean | null
+          created_at?: string
+          date_incident?: string
+          declare_par?: string | null
+          degre_responsabilite?: string | null
+          description?: string
+          expertise_date?: string | null
+          expertise_rapport?: string | null
+          id?: string
+          lieu?: string | null
+          montant_franchise?: number | null
+          notes?: string | null
+          numero_dossier_assurance?: string | null
+          photos_urls?: string[] | null
+          sanctions?: string | null
+          status?: Database["public"]["Enums"]["incident_status"]
+          tiers_implique?: boolean | null
+          tiers_info?: Json | null
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_incidents_conducteur_responsable_id_fkey"
+            columns: ["conducteur_responsable_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_incidents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_maintenances: {
+        Row: {
+          cout: number | null
+          created_at: string
+          date_entretien: string
+          description: string | null
+          effectue_par: string | null
+          id: string
+          kilometrage: number
+          prestataire: string | null
+          prochain_entretien_date: string | null
+          prochain_entretien_km: number | null
+          type_entretien: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          cout?: number | null
+          created_at?: string
+          date_entretien: string
+          description?: string | null
+          effectue_par?: string | null
+          id?: string
+          kilometrage: number
+          prestataire?: string | null
+          prochain_entretien_date?: string | null
+          prochain_entretien_km?: number | null
+          type_entretien: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          cout?: number | null
+          created_at?: string
+          date_entretien?: string
+          description?: string | null
+          effectue_par?: string | null
+          id?: string
+          kilometrage?: number
+          prestataire?: string | null
+          prochain_entretien_date?: string | null
+          prochain_entretien_km?: number | null
+          type_entretien?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_maintenances_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_repairs: {
+        Row: {
+          cout_main_oeuvre: number | null
+          cout_pieces: number | null
+          cout_total: number | null
+          created_at: string
+          date_debut: string
+          date_fin: string | null
+          description: string
+          effectue_par: string | null
+          est_termine: boolean | null
+          garage: string | null
+          id: string
+          kilometrage: number | null
+          pieces_changees: string[] | null
+          repair_type: Database["public"]["Enums"]["repair_type"]
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          cout_main_oeuvre?: number | null
+          cout_pieces?: number | null
+          cout_total?: number | null
+          created_at?: string
+          date_debut: string
+          date_fin?: string | null
+          description: string
+          effectue_par?: string | null
+          est_termine?: boolean | null
+          garage?: string | null
+          id?: string
+          kilometrage?: number | null
+          pieces_changees?: string[] | null
+          repair_type: Database["public"]["Enums"]["repair_type"]
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          cout_main_oeuvre?: number | null
+          cout_pieces?: number | null
+          cout_total?: number | null
+          created_at?: string
+          date_debut?: string
+          date_fin?: string | null
+          description?: string
+          effectue_par?: string | null
+          est_termine?: boolean | null
+          garage?: string | null
+          id?: string
+          kilometrage?: number | null
+          pieces_changees?: string[] | null
+          repair_type?: Database["public"]["Enums"]["repair_type"]
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_repairs_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicles: {
+        Row: {
+          annee: number | null
+          capacite_reservoir: number | null
+          conducteur_principal_id: string | null
+          consommation_moyenne: number | null
+          couleur: string | null
+          created_at: string
+          fuel_type: Database["public"]["Enums"]["fuel_type"]
+          id: string
+          immatriculation: string
+          kilometrage_actuel: number
+          location_id: string | null
+          marque: string
+          modele: string
+          notes: string | null
+          qr_code: string | null
+          status: Database["public"]["Enums"]["vehicle_status"]
+          updated_at: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          vin: string | null
+        }
+        Insert: {
+          annee?: number | null
+          capacite_reservoir?: number | null
+          conducteur_principal_id?: string | null
+          consommation_moyenne?: number | null
+          couleur?: string | null
+          created_at?: string
+          fuel_type?: Database["public"]["Enums"]["fuel_type"]
+          id?: string
+          immatriculation: string
+          kilometrage_actuel?: number
+          location_id?: string | null
+          marque: string
+          modele: string
+          notes?: string | null
+          qr_code?: string | null
+          status?: Database["public"]["Enums"]["vehicle_status"]
+          updated_at?: string
+          vehicle_type: Database["public"]["Enums"]["vehicle_type"]
+          vin?: string | null
+        }
+        Update: {
+          annee?: number | null
+          capacite_reservoir?: number | null
+          conducteur_principal_id?: string | null
+          consommation_moyenne?: number | null
+          couleur?: string | null
+          created_at?: string
+          fuel_type?: Database["public"]["Enums"]["fuel_type"]
+          id?: string
+          immatriculation?: string
+          kilometrage_actuel?: number
+          location_id?: string | null
+          marque?: string
+          modele?: string
+          notes?: string | null
+          qr_code?: string | null
+          status?: Database["public"]["Enums"]["vehicle_status"]
+          updated_at?: string
+          vehicle_type?: Database["public"]["Enums"]["vehicle_type"]
+          vin?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicles_conducteur_principal_id_fkey"
+            columns: ["conducteur_principal_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicles_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "view_camp_consumption_rate"
+            referencedColumns: ["location_id"]
+          },
+        ]
+      }
     }
     Views: {
       view_camp_consumption_rate: {
@@ -1221,7 +1645,9 @@ export type Database = {
     Enums: {
       app_role: "admin_central" | "chef_camp"
       category_type: "GEAR" | "FOOD"
+      fuel_type: "ESSENCE" | "DIESEL" | "GPL"
       gender_type: "homme" | "femme" | "unisexe"
+      incident_status: "DECLARE" | "EN_EXPERTISE" | "EN_REPARATION" | "CLOTURE"
       procurement_stage:
         | "DRAFT"
         | "SUPPLIER_SELECTION"
@@ -1239,6 +1665,7 @@ export type Database = {
         | "PAID"
         | "RECEIVED"
         | "CANCELLED"
+      repair_type: "LEGERE" | "LOURDE"
       request_status: "en_attente" | "approuve" | "traite" | "refuse"
       return_reason:
         | "RETIRED"
@@ -1256,6 +1683,25 @@ export type Database = {
         | "EMERGENCY_DISTRIBUTION"
       transport_mode: "AIR" | "SEA" | "LAND" | "MULTIMODAL"
       unit_type: "kg" | "litre" | "boite" | "unite"
+      vehicle_document_type:
+        | "ASSURANCE"
+        | "CARTE_GRISE"
+        | "CONTROLE_TECHNIQUE"
+        | "VIGNETTE"
+        | "AUTRE"
+      vehicle_status:
+        | "OPERATIONNEL"
+        | "EN_MAINTENANCE"
+        | "EN_REPARATION"
+        | "HORS_SERVICE"
+        | "EN_MISSION"
+      vehicle_type:
+        | "VOITURE"
+        | "CAMION"
+        | "MOTO"
+        | "BUS"
+        | "UTILITAIRE"
+        | "ENGIN_SPECIAL"
       verification_status:
         | "PENDING"
         | "VALIDATED"
@@ -1391,7 +1837,9 @@ export const Constants = {
     Enums: {
       app_role: ["admin_central", "chef_camp"],
       category_type: ["GEAR", "FOOD"],
+      fuel_type: ["ESSENCE", "DIESEL", "GPL"],
       gender_type: ["homme", "femme", "unisexe"],
+      incident_status: ["DECLARE", "EN_EXPERTISE", "EN_REPARATION", "CLOTURE"],
       procurement_stage: [
         "DRAFT",
         "SUPPLIER_SELECTION",
@@ -1410,6 +1858,7 @@ export const Constants = {
         "RECEIVED",
         "CANCELLED",
       ],
+      repair_type: ["LEGERE", "LOURDE"],
       request_status: ["en_attente", "approuve", "traite", "refuse"],
       return_reason: [
         "RETIRED",
@@ -1429,6 +1878,28 @@ export const Constants = {
       ],
       transport_mode: ["AIR", "SEA", "LAND", "MULTIMODAL"],
       unit_type: ["kg", "litre", "boite", "unite"],
+      vehicle_document_type: [
+        "ASSURANCE",
+        "CARTE_GRISE",
+        "CONTROLE_TECHNIQUE",
+        "VIGNETTE",
+        "AUTRE",
+      ],
+      vehicle_status: [
+        "OPERATIONNEL",
+        "EN_MAINTENANCE",
+        "EN_REPARATION",
+        "HORS_SERVICE",
+        "EN_MISSION",
+      ],
+      vehicle_type: [
+        "VOITURE",
+        "CAMION",
+        "MOTO",
+        "BUS",
+        "UTILITAIRE",
+        "ENGIN_SPECIAL",
+      ],
       verification_status: [
         "PENDING",
         "VALIDATED",

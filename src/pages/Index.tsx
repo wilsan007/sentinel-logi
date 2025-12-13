@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Loader2, Shield, Package, Users, LogOut, ShoppingCart, Clock, ClipboardList, FileDown } from "lucide-react";
+import { Loader2, Shield, Package, Users, LogOut, ShoppingCart, Clock, ClipboardList, FileDown, Car } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { DashboardWidgets } from "@/components/dashboard/DashboardWidgets";
 
@@ -333,6 +333,42 @@ export default function Index() {
                 </div>
               </div>
 
+              {/* Module Parc Automobile - Admin uniquement */}
+              {isAdmin && (
+                <div 
+                  onClick={() => navigate("/fleet")}
+                  className="glass-hover rounded-2xl p-8 border border-amber-500/30 group cursor-pointer"
+                >
+                  <div className="flex items-center gap-4 mb-4">
+                    <div className="p-4 rounded-xl bg-amber-500/10 group-hover:bg-amber-500/20 transition-colors">
+                      <Car className="h-8 w-8 text-amber-500" />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-amber-500">
+                        Parc Automobile
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        Gestion de la flotte
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground mb-6">
+                    Gérez les véhicules, entretiens, réparations, carburant, sinistres et documents.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-xs">
+                      Véhicules
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-xs">
+                      Carburant
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-amber-500/10 text-amber-500 text-xs">
+                      Sinistres
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Module Export - Admin uniquement */}
               {isAdmin && (
                 <div 
@@ -348,22 +384,19 @@ export default function Index() {
                         Export Données
                       </h3>
                       <p className="text-sm text-muted-foreground">
-                        Téléchargement CSV
+                        Téléchargement CSV/JSON
                       </p>
                     </div>
                   </div>
                   <p className="text-muted-foreground mb-6">
-                    Exportez toutes les données de la base en format CSV pour analyse ou sauvegarde.
+                    Exportez toutes les données de la base pour analyse ou sauvegarde.
                   </p>
                   <div className="flex flex-wrap gap-2">
                     <span className="px-3 py-1 rounded-full bg-rose-500/10 text-rose-500 text-xs">
                       CSV
                     </span>
                     <span className="px-3 py-1 rounded-full bg-rose-500/10 text-rose-500 text-xs">
-                      Toutes tables
-                    </span>
-                    <span className="px-3 py-1 rounded-full bg-rose-500/10 text-rose-500 text-xs">
-                      Sauvegarde
+                      JSON
                     </span>
                   </div>
                 </div>
