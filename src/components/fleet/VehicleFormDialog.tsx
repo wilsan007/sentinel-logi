@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -9,29 +9,25 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Users } from "lucide-react";
 import { Database } from "@/integrations/supabase/types";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Vehicle = Database["public"]["Tables"]["vehicles"]["Row"];
 
 const vehicleSchema = z.object({
   immatriculation: z.string().min(1, "Immatriculation requise"),
-  marque: z.string().min(1, "Marque requise"),
-  modele: z.string().min(1, "Modèle requis"),
+  location_id: z.string().min(1, "Département requis"),
   vehicle_type: z.enum(["VOITURE", "CAMION", "MOTO", "BUS", "UTILITAIRE", "ENGIN_SPECIAL"]),
-  fuel_type: z.enum(["ESSENCE", "DIESEL", "GPL"]),
-  status: z.enum(["OPERATIONNEL", "EN_MAINTENANCE", "EN_REPARATION", "HORS_SERVICE", "EN_MISSION"]),
+  marque: z.string().min(1, "Marque requise"),
   annee: z.coerce.number().optional(),
-  couleur: z.string().optional(),
+  modele: z.string().min(1, "Modèle requis"),
   vin: z.string().optional(),
-  capacite_reservoir: z.coerce.number().optional(),
-  consommation_moyenne: z.coerce.number().optional(),
-  kilometrage_actuel: z.coerce.number().min(0),
-  location_id: z.string().optional(),
+  carte_grise_numero: z.string().optional(),
+  assurance_dossier_numero: z.string().optional(),
   conducteur_principal_id: z.string().optional(),
-  notes: z.string().optional(),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
@@ -45,52 +41,20 @@ interface VehicleFormDialogProps {
 export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [authorizedDriverIds, setAuthorizedDriverIds] = useState<string[]>([]);
 
   const form = useForm<VehicleFormValues>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: {
       immatriculation: "",
+      location_id: "",
+      vehicle_type: "VOITURE",
       marque: "",
       modele: "",
-      vehicle_type: "VOITURE",
-      fuel_type: "DIESEL",
-      status: "OPERATIONNEL",
-      kilometrage_actuel: 0,
     },
   });
 
-  useEffect(() => {
-    if (vehicle) {
-      form.reset({
-        immatriculation: vehicle.immatriculation,
-        marque: vehicle.marque,
-        modele: vehicle.modele,
-        vehicle_type: vehicle.vehicle_type,
-        fuel_type: vehicle.fuel_type,
-        status: vehicle.status,
-        annee: vehicle.annee || undefined,
-        couleur: vehicle.couleur || undefined,
-        vin: vehicle.vin || undefined,
-        capacite_reservoir: vehicle.capacite_reservoir || undefined,
-        consommation_moyenne: vehicle.consommation_moyenne ? Number(vehicle.consommation_moyenne) : undefined,
-        kilometrage_actuel: vehicle.kilometrage_actuel,
-        location_id: vehicle.location_id || undefined,
-        conducteur_principal_id: vehicle.conducteur_principal_id || undefined,
-        notes: vehicle.notes || undefined,
-      });
-    } else {
-      form.reset({
-        immatriculation: "",
-        marque: "",
-        modele: "",
-        vehicle_type: "VOITURE",
-        fuel_type: "DIESEL",
-        status: "OPERATIONNEL",
-        kilometrage_actuel: 0,
-      });
-    }
-  }, [vehicle, form]);
-
+  // Fetch locations
   const { data: locations } = useQuery({
     queryKey: ["locations"],
     queryFn: async () => {
@@ -100,45 +64,117 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
     },
   });
 
+  // Fetch all active personnel
   const { data: personnel } = useQuery({
     queryKey: ["personnel-all"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("personnel").select("id, nom, prenom").eq("actif", true).order("nom");
+      const { data, error } = await supabase
+        .from("personnel")
+        .select("id, nom, prenom")
+        .eq("actif", true)
+        .order("nom");
       if (error) throw error;
       return data;
     },
   });
 
+  // Fetch authorized drivers for existing vehicle
+  const { data: existingAuthorizedDrivers } = useQuery({
+    queryKey: ["vehicle-authorized-drivers", vehicle?.id],
+    queryFn: async () => {
+      if (!vehicle?.id) return [];
+      const { data, error } = await supabase
+        .from("vehicle_authorized_drivers")
+        .select("personnel_id")
+        .eq("vehicle_id", vehicle.id);
+      if (error) throw error;
+      return data.map((d) => d.personnel_id);
+    },
+    enabled: !!vehicle?.id,
+  });
+
+  useEffect(() => {
+    if (vehicle) {
+      form.reset({
+        immatriculation: vehicle.immatriculation,
+        location_id: vehicle.location_id || "",
+        vehicle_type: vehicle.vehicle_type,
+        marque: vehicle.marque,
+        annee: vehicle.annee || undefined,
+        modele: vehicle.modele,
+        vin: vehicle.vin || undefined,
+        carte_grise_numero: (vehicle as any).carte_grise_numero || undefined,
+        assurance_dossier_numero: (vehicle as any).assurance_dossier_numero || undefined,
+        conducteur_principal_id: vehicle.conducteur_principal_id || undefined,
+      });
+    } else {
+      form.reset({
+        immatriculation: "",
+        location_id: "",
+        vehicle_type: "VOITURE",
+        marque: "",
+        modele: "",
+      });
+      setAuthorizedDriverIds([]);
+    }
+  }, [vehicle, form]);
+
+  useEffect(() => {
+    if (existingAuthorizedDrivers) {
+      setAuthorizedDriverIds(existingAuthorizedDrivers);
+    }
+  }, [existingAuthorizedDrivers]);
+
   const mutation = useMutation({
     mutationFn: async (values: VehicleFormValues) => {
       const payload = {
         immatriculation: values.immatriculation,
-        marque: values.marque,
-        modele: values.modele,
+        location_id: values.location_id,
         vehicle_type: values.vehicle_type,
-        fuel_type: values.fuel_type,
-        status: values.status,
+        marque: values.marque,
         annee: values.annee || null,
-        couleur: values.couleur || null,
+        modele: values.modele,
         vin: values.vin || null,
-        capacite_reservoir: values.capacite_reservoir || null,
-        consommation_moyenne: values.consommation_moyenne || null,
-        kilometrage_actuel: values.kilometrage_actuel,
-        location_id: values.location_id || null,
+        carte_grise_numero: values.carte_grise_numero || null,
+        assurance_dossier_numero: values.assurance_dossier_numero || null,
         conducteur_principal_id: values.conducteur_principal_id || null,
-        notes: values.notes || null,
+        // Keep existing fields with defaults
+        fuel_type: "DIESEL" as const,
+        status: "OPERATIONNEL" as const,
+        kilometrage_actuel: vehicle?.kilometrage_actuel || 0,
       };
+
+      let vehicleId: string;
 
       if (vehicle) {
         const { error } = await supabase.from("vehicles").update(payload).eq("id", vehicle.id);
         if (error) throw error;
+        vehicleId = vehicle.id;
       } else {
-        const { error } = await supabase.from("vehicles").insert([payload]);
+        const { data, error } = await supabase.from("vehicles").insert([payload]).select("id").single();
         if (error) throw error;
+        vehicleId = data.id;
+      }
+
+      // Update authorized drivers
+      // First delete existing ones
+      await supabase.from("vehicle_authorized_drivers").delete().eq("vehicle_id", vehicleId);
+      
+      // Then insert new ones
+      if (authorizedDriverIds.length > 0) {
+        const driversToInsert = authorizedDriverIds.map((personnelId) => ({
+          vehicle_id: vehicleId,
+          personnel_id: personnelId,
+        }));
+        const { error: driversError } = await supabase
+          .from("vehicle_authorized_drivers")
+          .insert(driversToInsert);
+        if (driversError) throw driversError;
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["vehicles"] });
+      queryClient.invalidateQueries({ queryKey: ["vehicle-authorized-drivers"] });
       toast({ title: vehicle ? "Véhicule mis à jour" : "Véhicule créé" });
       onOpenChange(false);
     },
@@ -146,6 +182,14 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
       toast({ title: "Erreur", description: error.message, variant: "destructive" });
     },
   });
+
+  const toggleAuthorizedDriver = (personnelId: string) => {
+    setAuthorizedDriverIds((prev) =>
+      prev.includes(personnelId)
+        ? prev.filter((id) => id !== personnelId)
+        : [...prev, personnelId]
+    );
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -157,6 +201,7 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
         <Form {...form}>
           <form onSubmit={form.handleSubmit((v) => mutation.mutate(v))} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
+              {/* Immatriculation - Primary search field */}
               <FormField
                 control={form.control}
                 name="immatriculation"
@@ -164,13 +209,40 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
                   <FormItem>
                     <FormLabel>Immatriculation *</FormLabel>
                     <FormControl>
-                      <Input placeholder="DJ-1234-A" {...field} />
+                      <Input placeholder="DJ-1234-A" {...field} className="font-mono" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* Département / Location */}
+              <FormField
+                control={form.control}
+                name="location_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Département *</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Sélectionner un département" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {locations?.map((loc) => (
+                          <SelectItem key={loc.id} value={loc.id}>
+                            {loc.nom}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Type */}
               <FormField
                 control={form.control}
                 name="vehicle_type"
@@ -197,6 +269,7 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
                 )}
               />
 
+              {/* Marque */}
               <FormField
                 control={form.control}
                 name="marque"
@@ -211,20 +284,7 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="modele"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Modèle *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Land Cruiser" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+              {/* Année */}
               <FormField
                 control={form.control}
                 name="annee"
@@ -239,88 +299,28 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
                 )}
               />
 
+              {/* Modèle */}
               <FormField
                 control={form.control}
-                name="couleur"
+                name="modele"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Couleur</FormLabel>
+                    <FormLabel>Modèle *</FormLabel>
                     <FormControl>
-                      <Input placeholder="Blanc" {...field} />
+                      <Input placeholder="Land Cruiser" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="fuel_type"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Carburant *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="DIESEL">Diesel</SelectItem>
-                        <SelectItem value="ESSENCE">Essence</SelectItem>
-                        <SelectItem value="GPL">GPL</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="status"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Statut *</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        <SelectItem value="OPERATIONNEL">Opérationnel</SelectItem>
-                        <SelectItem value="EN_MAINTENANCE">En maintenance</SelectItem>
-                        <SelectItem value="EN_REPARATION">En réparation</SelectItem>
-                        <SelectItem value="HORS_SERVICE">Hors service</SelectItem>
-                        <SelectItem value="EN_MISSION">En mission</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="kilometrage_actuel"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Kilométrage actuel *</FormLabel>
-                    <FormControl>
-                      <Input type="number" placeholder="50000" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+              {/* Numéro de châssis (VIN) */}
               <FormField
                 control={form.control}
                 name="vin"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Numéro VIN</FormLabel>
+                    <FormLabel>Numéro de châssis</FormLabel>
                     <FormControl>
                       <Input placeholder="JTDBE32K..." {...field} />
                     </FormControl>
@@ -329,59 +329,37 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
                 )}
               />
 
+              {/* Numéro carte grise */}
               <FormField
                 control={form.control}
-                name="capacite_reservoir"
+                name="carte_grise_numero"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Capacité réservoir (L)</FormLabel>
+                    <FormLabel>N° Carte grise</FormLabel>
                     <FormControl>
-                      <Input type="number" placeholder="80" {...field} />
+                      <Input placeholder="CG-123456" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
+              {/* Numéro dossier assurance */}
               <FormField
                 control={form.control}
-                name="consommation_moyenne"
+                name="assurance_dossier_numero"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Consommation (L/100km)</FormLabel>
+                    <FormLabel>N° Dossier assurance</FormLabel>
                     <FormControl>
-                      <Input type="number" step="0.1" placeholder="12.5" {...field} />
+                      <Input placeholder="ASS-789012" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
 
-              <FormField
-                control={form.control}
-                name="location_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Camp assigné</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value || ""}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Sélectionner un camp" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {locations?.map((loc) => (
-                          <SelectItem key={loc.id} value={loc.id}>
-                            {loc.nom}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
+              {/* Conducteur principal */}
               <FormField
                 control={form.control}
                 name="conducteur_principal_id"
@@ -408,19 +386,32 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
               />
             </div>
 
-            <FormField
-              control={form.control}
-              name="notes"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Notes</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="Remarques sur le véhicule..." {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* Conducteurs autorisés */}
+            <div className="space-y-2">
+              <FormLabel className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Conducteurs autorisés ({authorizedDriverIds.length})
+              </FormLabel>
+              <ScrollArea className="h-40 rounded-md border p-3">
+                <div className="space-y-2">
+                  {personnel?.map((p) => (
+                    <div key={p.id} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`driver-${p.id}`}
+                        checked={authorizedDriverIds.includes(p.id)}
+                        onCheckedChange={() => toggleAuthorizedDriver(p.id)}
+                      />
+                      <label
+                        htmlFor={`driver-${p.id}`}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                      >
+                        {p.prenom} {p.nom}
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+            </div>
 
             <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
