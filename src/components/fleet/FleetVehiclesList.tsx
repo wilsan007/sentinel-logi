@@ -126,17 +126,17 @@ export function FleetVehiclesList() {
                   <TableHead>Immatriculation</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Marque / Modèle</TableHead>
+                  <TableHead>Département</TableHead>
+                  <TableHead>N° Carte grise</TableHead>
+                  <TableHead>Conducteur principal</TableHead>
                   <TableHead>Statut</TableHead>
-                  <TableHead>Kilométrage</TableHead>
-                  <TableHead>Camp</TableHead>
-                  <TableHead>Conducteur</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredVehicles.map((vehicle: any) => (
                   <TableRow key={vehicle.id}>
-                    <TableCell className="font-mono font-bold">
+                    <TableCell className="font-mono font-bold text-amber-500">
                       {vehicle.immatriculation}
                     </TableCell>
                     <TableCell>{TYPE_LABELS[vehicle.vehicle_type as VehicleType]}</TableCell>
@@ -144,18 +144,20 @@ export function FleetVehiclesList() {
                       {vehicle.marque} {vehicle.modele}
                       {vehicle.annee && <span className="text-muted-foreground ml-1">({vehicle.annee})</span>}
                     </TableCell>
-                    <TableCell>
-                      <Badge className={STATUS_LABELS[vehicle.status as VehicleStatus].color}>
-                        {STATUS_LABELS[vehicle.status as VehicleStatus].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{vehicle.kilometrage_actuel?.toLocaleString()} km</TableCell>
                     <TableCell>{vehicle.location?.nom || "-"}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {vehicle.carte_grise_numero || "-"}
+                    </TableCell>
                     <TableCell>
                       {vehicle.conducteur 
                         ? `${vehicle.conducteur.prenom} ${vehicle.conducteur.nom}`
                         : "-"
                       }
+                    </TableCell>
+                    <TableCell>
+                      <Badge className={STATUS_LABELS[vehicle.status as VehicleStatus].color}>
+                        {STATUS_LABELS[vehicle.status as VehicleStatus].label}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

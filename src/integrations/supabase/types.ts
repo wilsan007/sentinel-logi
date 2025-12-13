@@ -1104,6 +1104,42 @@ export type Database = {
           },
         ]
       }
+      vehicle_authorized_drivers: {
+        Row: {
+          created_at: string
+          id: string
+          personnel_id: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          personnel_id: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          personnel_id?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_authorized_drivers_personnel_id_fkey"
+            columns: ["personnel_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_authorized_drivers_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_documents: {
         Row: {
           cout: number | null
@@ -1443,7 +1479,9 @@ export type Database = {
       vehicles: {
         Row: {
           annee: number | null
+          assurance_dossier_numero: string | null
           capacite_reservoir: number | null
+          carte_grise_numero: string | null
           conducteur_principal_id: string | null
           consommation_moyenne: number | null
           couleur: string | null
@@ -1464,7 +1502,9 @@ export type Database = {
         }
         Insert: {
           annee?: number | null
+          assurance_dossier_numero?: string | null
           capacite_reservoir?: number | null
+          carte_grise_numero?: string | null
           conducteur_principal_id?: string | null
           consommation_moyenne?: number | null
           couleur?: string | null
@@ -1485,7 +1525,9 @@ export type Database = {
         }
         Update: {
           annee?: number | null
+          assurance_dossier_numero?: string | null
           capacite_reservoir?: number | null
+          carte_grise_numero?: string | null
           conducteur_principal_id?: string | null
           consommation_moyenne?: number | null
           couleur?: string | null
