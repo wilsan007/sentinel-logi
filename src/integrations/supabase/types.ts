@@ -1256,6 +1256,75 @@ export type Database = {
           },
         ]
       }
+      vehicle_garage_intakes: {
+        Row: {
+          conducteur_id: string | null
+          created_at: string
+          date_arrivee: string
+          date_sortie: string | null
+          enregistre_par: string | null
+          id: string
+          impressions_conducteur: string | null
+          is_authorized_driver: boolean
+          kilometrage_arrivee: number
+          motif: string
+          motif_precision: string | null
+          service_oriente: string | null
+          statut: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          conducteur_id?: string | null
+          created_at?: string
+          date_arrivee?: string
+          date_sortie?: string | null
+          enregistre_par?: string | null
+          id?: string
+          impressions_conducteur?: string | null
+          is_authorized_driver?: boolean
+          kilometrage_arrivee: number
+          motif: string
+          motif_precision?: string | null
+          service_oriente?: string | null
+          statut?: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          conducteur_id?: string | null
+          created_at?: string
+          date_arrivee?: string
+          date_sortie?: string | null
+          enregistre_par?: string | null
+          id?: string
+          impressions_conducteur?: string | null
+          is_authorized_driver?: boolean
+          kilometrage_arrivee?: number
+          motif?: string
+          motif_precision?: string | null
+          service_oriente?: string | null
+          statut?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_garage_intakes_conducteur_id_fkey"
+            columns: ["conducteur_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_garage_intakes_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_incidents: {
         Row: {
           cloture_date: string | null
