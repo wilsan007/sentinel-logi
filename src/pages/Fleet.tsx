@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Loader2, Car, ArrowLeft, Wrench, Fuel, AlertTriangle, FileText, Settings } from "lucide-react";
+import { Loader2, Car, ArrowLeft, Wrench, Fuel, AlertTriangle, FileText, Settings, ClipboardCheck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FleetVehiclesList } from "@/components/fleet/FleetVehiclesList";
 import { FleetMaintenanceManager } from "@/components/fleet/FleetMaintenanceManager";
@@ -11,12 +11,13 @@ import { FleetRepairsManager } from "@/components/fleet/FleetRepairsManager";
 import { FleetFuelManager } from "@/components/fleet/FleetFuelManager";
 import { FleetIncidentsManager } from "@/components/fleet/FleetIncidentsManager";
 import { FleetDocumentsManager } from "@/components/fleet/FleetDocumentsManager";
+import { GarageIntakesList } from "@/components/fleet/GarageIntakesList";
 
 export default function Fleet() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("vehicles");
+  const [activeTab, setActiveTab] = useState("intake");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -100,7 +101,11 @@ export default function Fleet() {
         {/* Contenu principal */}
         <main className="container mx-auto px-4 py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="glass grid grid-cols-6 w-full max-w-4xl mx-auto">
+            <TabsList className="glass grid grid-cols-7 w-full max-w-5xl mx-auto">
+              <TabsTrigger value="intake" className="gap-2 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
+                <ClipboardCheck className="h-4 w-4" />
+                <span className="hidden md:inline">Réception</span>
+              </TabsTrigger>
               <TabsTrigger value="vehicles" className="gap-2 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
                 <Car className="h-4 w-4" />
                 <span className="hidden md:inline">Véhicules</span>
@@ -126,6 +131,10 @@ export default function Fleet() {
                 <span className="hidden md:inline">Documents</span>
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="intake">
+              <GarageIntakesList />
+            </TabsContent>
 
             <TabsContent value="vehicles">
               <FleetVehiclesList />
