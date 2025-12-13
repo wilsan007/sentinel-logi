@@ -1057,47 +1057,77 @@ export type Database = {
       spare_parts: {
         Row: {
           categorie: string
+          condition_note: string | null
           created_at: string
           description: string | null
           emplacement_stock: string | null
           fournisseur: string | null
           id: string
+          is_recycled: boolean | null
           nom: string
+          original_part_id: string | null
           prix_unitaire: number | null
           quantite: number
+          recovered_date: string | null
+          recovered_from_vehicle_id: string | null
           reference: string
           seuil_alerte: number | null
           updated_at: string
         }
         Insert: {
           categorie: string
+          condition_note?: string | null
           created_at?: string
           description?: string | null
           emplacement_stock?: string | null
           fournisseur?: string | null
           id?: string
+          is_recycled?: boolean | null
           nom: string
+          original_part_id?: string | null
           prix_unitaire?: number | null
           quantite?: number
+          recovered_date?: string | null
+          recovered_from_vehicle_id?: string | null
           reference: string
           seuil_alerte?: number | null
           updated_at?: string
         }
         Update: {
           categorie?: string
+          condition_note?: string | null
           created_at?: string
           description?: string | null
           emplacement_stock?: string | null
           fournisseur?: string | null
           id?: string
+          is_recycled?: boolean | null
           nom?: string
+          original_part_id?: string | null
           prix_unitaire?: number | null
           quantite?: number
+          recovered_date?: string | null
+          recovered_from_vehicle_id?: string | null
           reference?: string
           seuil_alerte?: number | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "spare_parts_original_part_id_fkey"
+            columns: ["original_part_id"]
+            isOneToOne: false
+            referencedRelation: "spare_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spare_parts_recovered_from_vehicle_id_fkey"
+            columns: ["recovered_from_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stock_items: {
         Row: {

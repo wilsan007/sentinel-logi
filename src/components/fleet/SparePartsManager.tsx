@@ -57,6 +57,7 @@ export function SparePartsManager() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showDialog, setShowDialog] = useState(false);
+  const [showRecycleDialog, setShowRecycleDialog] = useState(false);
   const [editingPart, setEditingPart] = useState<any>(null);
   const [formData, setFormData] = useState({
     reference: "",
@@ -68,6 +69,9 @@ export function SparePartsManager() {
     fournisseur: "",
     emplacement_stock: "",
     description: "",
+    is_recycled: false,
+    recovered_from_vehicle_id: "",
+    condition_note: "",
   });
 
   const { data: spareParts, isLoading } = useQuery({
@@ -75,8 +79,20 @@ export function SparePartsManager() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("spare_parts")
-        .select("*")
+        .select("*, recovered_vehicle:vehicles!spare_parts_recovered_from_vehicle_id_fkey(immatriculation)")
         .order("categorie, nom");
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: vehicles } = useQuery({
+    queryKey: ["vehicles-for-parts"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("vehicles")
+        .select("id, immatriculation, marque, modele")
+        .order("immatriculation");
       if (error) throw error;
       return data;
     },
@@ -84,14 +100,30 @@ export function SparePartsManager() {
 
   const saveMutation = useMutation({
     mutationFn: async () => {
+      const payload = {
+        reference: formData.reference,
+        nom: formData.nom,
+        categorie: formData.categorie,
+        quantite: formData.quantite,
+        seuil_alerte: formData.seuil_alerte,
+        prix_unitaire: formData.prix_unitaire || null,
+        fournisseur: formData.fournisseur || null,
+        emplacement_stock: formData.emplacement_stock || null,
+        description: formData.description || null,
+        is_recycled: formData.is_recycled,
+        recovered_from_vehicle_id: formData.recovered_from_vehicle_id || null,
+        recovered_date: formData.is_recycled ? new Date().toISOString().split('T')[0] : null,
+        condition_note: formData.condition_note || null,
+      };
+      
       if (editingPart) {
         const { error } = await supabase
           .from("spare_parts")
-          .update(formData)
+          .update(payload)
           .eq("id", editingPart.id);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("spare_parts").insert(formData);
+        const { error } = await supabase.from("spare_parts").insert(payload);
         if (error) throw error;
       }
     },
@@ -99,6 +131,7 @@ export function SparePartsManager() {
       queryClient.invalidateQueries({ queryKey: ["spare-parts"] });
       toast.success(editingPart ? "Pièce mise à jour" : "Pièce ajoutée");
       closeDialog();
+      setShowRecycleDialog(false);
     },
     onError: (error: any) => {
       toast.error("Erreur: " + error.message);
@@ -139,7 +172,7 @@ export function SparePartsManager() {
     },
   });
 
-  const openDialog = (part?: any) => {
+  const openDialog = (part?: any, isRecycle = false) => {
     if (part) {
       setEditingPart(part);
       setFormData({
@@ -147,11 +180,14 @@ export function SparePartsManager() {
         nom: part.nom,
         categorie: part.categorie,
         quantite: part.quantite,
-        seuil_alerte: part.seuil_alerte,
+        seuil_alerte: part.seuil_alerte || 5,
         prix_unitaire: part.prix_unitaire || 0,
         fournisseur: part.fournisseur || "",
         emplacement_stock: part.emplacement_stock || "",
         description: part.description || "",
+        is_recycled: part.is_recycled || false,
+        recovered_from_vehicle_id: part.recovered_from_vehicle_id || "",
+        condition_note: part.condition_note || "",
       });
     } else {
       setEditingPart(null);
@@ -159,15 +195,22 @@ export function SparePartsManager() {
         reference: "",
         nom: "",
         categorie: "",
-        quantite: 0,
+        quantite: isRecycle ? 1 : 0,
         seuil_alerte: 5,
         prix_unitaire: 0,
         fournisseur: "",
         emplacement_stock: "",
         description: "",
+        is_recycled: isRecycle,
+        recovered_from_vehicle_id: "",
+        condition_note: "",
       });
     }
-    setShowDialog(true);
+    if (isRecycle) {
+      setShowRecycleDialog(true);
+    } else {
+      setShowDialog(true);
+    }
   };
 
   const closeDialog = () => {
@@ -183,7 +226,9 @@ export function SparePartsManager() {
   );
 
   const lowStockCount =
-    spareParts?.filter((p) => p.quantite <= p.seuil_alerte).length || 0;
+    spareParts?.filter((p) => p.quantite <= (p.seuil_alerte || 5)).length || 0;
+  
+  const recycledCount = spareParts?.filter((p) => p.is_recycled).length || 0;
 
   if (isLoading) {
     return (
@@ -196,7 +241,7 @@ export function SparePartsManager() {
   return (
     <Card className="glass border-amber-500/30">
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <CardTitle className="flex items-center gap-2 text-amber-500">
             <Package className="h-5 w-5" />
             Pièces détachées ({spareParts?.length || 0})
@@ -206,14 +251,28 @@ export function SparePartsManager() {
                 {lowStockCount} en alerte
               </Badge>
             )}
+            {recycledCount > 0 && (
+              <Badge className="bg-green-500/20 text-green-500 gap-1">
+                ♻️ {recycledCount} recyclées
+              </Badge>
+            )}
           </CardTitle>
-          <Button
-            onClick={() => openDialog()}
-            className="gap-2 bg-amber-500 hover:bg-amber-600"
-          >
-            <Plus className="h-4 w-4" />
-            Ajouter pièce
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => openDialog(undefined, true)}
+              variant="outline"
+              className="gap-2 border-green-500/50 text-green-500 hover:bg-green-500/10"
+            >
+              ♻️ Récupérer pièce
+            </Button>
+            <Button
+              onClick={() => openDialog()}
+              className="gap-2 bg-amber-500 hover:bg-amber-600"
+            >
+              <Plus className="h-4 w-4" />
+              Ajouter pièce
+            </Button>
+          </div>
         </div>
         <div className="relative mt-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -236,13 +295,13 @@ export function SparePartsManager() {
                   <TableHead>Catégorie</TableHead>
                   <TableHead className="text-center">Stock</TableHead>
                   <TableHead className="text-right">Prix unit.</TableHead>
-                  <TableHead>Emplacement</TableHead>
+                  <TableHead>Origine</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredParts.map((part) => (
-                  <TableRow key={part.id}>
+                {filteredParts.map((part: any) => (
+                  <TableRow key={part.id} className={part.is_recycled ? "bg-green-500/5" : ""}>
                     <TableCell className="font-mono text-sm">
                       {part.reference}
                     </TableCell>
@@ -286,10 +345,21 @@ export function SparePartsManager() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      {part.prix_unitaire?.toLocaleString()} FDJ
+                      {part.prix_unitaire ? `${part.prix_unitaire.toLocaleString()} FDJ` : "-"}
                     </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {part.emplacement_stock || "-"}
+                    <TableCell className="text-sm">
+                      {part.is_recycled ? (
+                        <div className="flex items-center gap-1">
+                          <Badge className="bg-green-500/20 text-green-500 text-xs">♻️ Recyclée</Badge>
+                          {part.recovered_vehicle?.immatriculation && (
+                            <span className="text-xs text-muted-foreground">
+                              de {part.recovered_vehicle.immatriculation}
+                            </span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">{part.emplacement_stock || "Neuve"}</span>
+                      )}
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
@@ -458,6 +528,114 @@ export function SparePartsManager() {
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 )}
                 {editingPart ? "Mettre à jour" : "Ajouter"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog Récupération de pièce */}
+      <Dialog open={showRecycleDialog} onOpenChange={setShowRecycleDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              ♻️ Récupérer une pièce
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-sm">
+              Enregistrez une pièce récupérée d'un véhicule pour réutilisation sur d'autres véhicules.
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Référence *</Label>
+                <Input
+                  value={formData.reference}
+                  onChange={(e) => setFormData({ ...formData, reference: e.target.value })}
+                  placeholder="REF-REC-001"
+                />
+              </div>
+              <div>
+                <Label>Catégorie *</Label>
+                <Select
+                  value={formData.categorie}
+                  onValueChange={(val) => setFormData({ ...formData, categorie: val })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {CATEGORIES.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Nom de la pièce *</Label>
+              <Input
+                value={formData.nom}
+                onChange={(e) => setFormData({ ...formData, nom: e.target.value })}
+                placeholder="Alternateur"
+              />
+            </div>
+            <div>
+              <Label>Véhicule d'origine</Label>
+              <Select
+                value={formData.recovered_from_vehicle_id}
+                onValueChange={(val) => setFormData({ ...formData, recovered_from_vehicle_id: val })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Sélectionner le véhicule" />
+                </SelectTrigger>
+                <SelectContent>
+                  {vehicles?.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.immatriculation} - {v.marque} {v.modele}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Quantité</Label>
+                <Input
+                  type="number"
+                  value={formData.quantite}
+                  onChange={(e) => setFormData({ ...formData, quantite: Number(e.target.value) })}
+                  min={1}
+                />
+              </div>
+              <div>
+                <Label>Emplacement</Label>
+                <Input
+                  value={formData.emplacement_stock}
+                  onChange={(e) => setFormData({ ...formData, emplacement_stock: e.target.value })}
+                  placeholder="Étagère B2"
+                />
+              </div>
+            </div>
+            <div>
+              <Label>État / Notes sur la condition</Label>
+              <Input
+                value={formData.condition_note}
+                onChange={(e) => setFormData({ ...formData, condition_note: e.target.value })}
+                placeholder="Bon état, testé fonctionnel"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowRecycleDialog(false)}>
+                Annuler
+              </Button>
+              <Button
+                onClick={() => saveMutation.mutate()}
+                disabled={saveMutation.isPending || !formData.reference || !formData.nom || !formData.categorie}
+                className="bg-green-500 hover:bg-green-600"
+              >
+                {saveMutation.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                ♻️ Enregistrer
               </Button>
             </div>
           </div>
