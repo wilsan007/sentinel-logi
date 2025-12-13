@@ -34,6 +34,7 @@ import {
   ArrowLeft,
   Shirt,
   UtensilsCrossed,
+  Wrench,
   CheckCircle,
   FileText,
   Calendar,
@@ -168,7 +169,7 @@ export const SmartPurchaseWizard = ({
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
-    const prefix = selectedCategory === "GEAR" ? "HAB" : selectedCategory === "FOOD" ? "ALM" : "PO";
+    const prefix = selectedCategory === "GEAR" ? "HAB" : selectedCategory === "FOOD" ? "ALM" : selectedCategory === "SPARE_PARTS" ? "PDR" : "PO";
     setOrderNumber(`${prefix}-${year}${month}-${random}`);
   };
 
@@ -476,8 +477,12 @@ export const SmartPurchaseWizard = ({
             <Sparkles className="h-5 w-5 text-emerald-500" />
             <span className="text-emerald-500">Assistant Smart Purchase</span>
             {selectedCategory && (
-              <Badge className={selectedCategory === "GEAR" ? "bg-cyan-500/20 text-cyan-500" : "bg-amber-500/20 text-amber-500"}>
-                {selectedCategory === "GEAR" ? "Habillement" : "Alimentaire"}
+              <Badge className={
+                selectedCategory === "GEAR" ? "bg-cyan-500/20 text-cyan-500" : 
+                selectedCategory === "FOOD" ? "bg-amber-500/20 text-amber-500" : 
+                "bg-orange-500/20 text-orange-500"
+              }>
+                {selectedCategory === "GEAR" ? "Habillement" : selectedCategory === "FOOD" ? "Alimentaire" : "Pièces Détachées"}
               </Badge>
             )}
           </DialogTitle>
@@ -539,7 +544,7 @@ export const SmartPurchaseWizard = ({
                     </p>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 max-w-2xl mx-auto">
+                  <div className="grid grid-cols-3 gap-4 max-w-4xl mx-auto">
                     <Card
                       className={`cursor-pointer transition-all duration-300 hover:scale-105 ${
                         selectedCategory === "GEAR"
@@ -548,13 +553,13 @@ export const SmartPurchaseWizard = ({
                       }`}
                       onClick={() => setSelectedCategory("GEAR")}
                     >
-                      <CardContent className="p-8 text-center">
-                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                          <Shirt className="h-10 w-10 text-cyan-500" />
+                      <CardContent className="p-6 text-center">
+                        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                          <Shirt className="h-8 w-8 text-cyan-500" />
                         </div>
                         <h4 className="text-lg font-semibold text-cyan-500">Habillement</h4>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Uniformes, équipements, accessoires vestimentaires
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Uniformes, équipements
                         </p>
                       </CardContent>
                     </Card>
@@ -567,13 +572,32 @@ export const SmartPurchaseWizard = ({
                       }`}
                       onClick={() => setSelectedCategory("FOOD")}
                     >
-                      <CardContent className="p-8 text-center">
-                        <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-amber-500/20 flex items-center justify-center">
-                          <UtensilsCrossed className="h-10 w-10 text-amber-500" />
+                      <CardContent className="p-6 text-center">
+                        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-amber-500/20 flex items-center justify-center">
+                          <UtensilsCrossed className="h-8 w-8 text-amber-500" />
                         </div>
                         <h4 className="text-lg font-semibold text-amber-500">Alimentaire</h4>
-                        <p className="text-sm text-muted-foreground mt-2">
-                          Provisions, denrées, produits alimentaires
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Provisions, denrées
+                        </p>
+                      </CardContent>
+                    </Card>
+
+                    <Card
+                      className={`cursor-pointer transition-all duration-300 hover:scale-105 ${
+                        selectedCategory === "SPARE_PARTS"
+                          ? "border-orange-500 bg-orange-500/10 ring-2 ring-orange-500"
+                          : "border-border/50 hover:border-orange-500/50"
+                      }`}
+                      onClick={() => setSelectedCategory("SPARE_PARTS" as CategoryType)}
+                    >
+                      <CardContent className="p-6 text-center">
+                        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-orange-500/20 flex items-center justify-center">
+                          <Wrench className="h-8 w-8 text-orange-500" />
+                        </div>
+                        <h4 className="text-lg font-semibold text-orange-500">Pièces Détachées</h4>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          Pièces auto, composants
                         </p>
                       </CardContent>
                     </Card>

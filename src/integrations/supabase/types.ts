@@ -1064,9 +1064,12 @@ export type Database = {
           fournisseur: string | null
           id: string
           is_recycled: boolean | null
+          last_order_date: string | null
+          last_order_quantity: number | null
           nom: string
           original_part_id: string | null
           prix_unitaire: number | null
+          procurement_order_id: string | null
           quantite: number
           recovered_date: string | null
           recovered_from_vehicle_id: string | null
@@ -1083,9 +1086,12 @@ export type Database = {
           fournisseur?: string | null
           id?: string
           is_recycled?: boolean | null
+          last_order_date?: string | null
+          last_order_quantity?: number | null
           nom: string
           original_part_id?: string | null
           prix_unitaire?: number | null
+          procurement_order_id?: string | null
           quantite?: number
           recovered_date?: string | null
           recovered_from_vehicle_id?: string | null
@@ -1102,9 +1108,12 @@ export type Database = {
           fournisseur?: string | null
           id?: string
           is_recycled?: boolean | null
+          last_order_date?: string | null
+          last_order_quantity?: number | null
           nom?: string
           original_part_id?: string | null
           prix_unitaire?: number | null
+          procurement_order_id?: string | null
           quantite?: number
           recovered_date?: string | null
           recovered_from_vehicle_id?: string | null
@@ -1121,8 +1130,100 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "spare_parts_procurement_order_id_fkey"
+            columns: ["procurement_order_id"]
+            isOneToOne: false
+            referencedRelation: "procurement_orders"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "spare_parts_recovered_from_vehicle_id_fkey"
             columns: ["recovered_from_vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spare_parts_requests: {
+        Row: {
+          approuve_par: string | null
+          categorie: string
+          created_at: string | null
+          date_demande: string | null
+          date_traitement: string | null
+          demande_par: string | null
+          diagnostic_id: string | null
+          id: string
+          motif: string | null
+          notes: string | null
+          part_name: string
+          part_reference: string | null
+          quantite_demandee: number
+          spare_part_id: string | null
+          statut: string | null
+          updated_at: string | null
+          urgence: string | null
+          vehicle_id: string | null
+        }
+        Insert: {
+          approuve_par?: string | null
+          categorie: string
+          created_at?: string | null
+          date_demande?: string | null
+          date_traitement?: string | null
+          demande_par?: string | null
+          diagnostic_id?: string | null
+          id?: string
+          motif?: string | null
+          notes?: string | null
+          part_name: string
+          part_reference?: string | null
+          quantite_demandee?: number
+          spare_part_id?: string | null
+          statut?: string | null
+          updated_at?: string | null
+          urgence?: string | null
+          vehicle_id?: string | null
+        }
+        Update: {
+          approuve_par?: string | null
+          categorie?: string
+          created_at?: string | null
+          date_demande?: string | null
+          date_traitement?: string | null
+          demande_par?: string | null
+          diagnostic_id?: string | null
+          id?: string
+          motif?: string | null
+          notes?: string | null
+          part_name?: string
+          part_reference?: string | null
+          quantite_demandee?: number
+          spare_part_id?: string | null
+          statut?: string | null
+          updated_at?: string | null
+          urgence?: string | null
+          vehicle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spare_parts_requests_diagnostic_id_fkey"
+            columns: ["diagnostic_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_diagnostics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spare_parts_requests_spare_part_id_fkey"
+            columns: ["spare_part_id"]
+            isOneToOne: false
+            referencedRelation: "spare_parts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spare_parts_requests_vehicle_id_fkey"
+            columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
             referencedColumns: ["id"]
@@ -2166,7 +2267,7 @@ export type Database = {
     }
     Enums: {
       app_role: "admin_central" | "chef_camp"
-      category_type: "GEAR" | "FOOD"
+      category_type: "GEAR" | "FOOD" | "SPARE_PARTS"
       fuel_type: "ESSENCE" | "DIESEL" | "GPL"
       gender_type: "homme" | "femme" | "unisexe"
       incident_status: "DECLARE" | "EN_EXPERTISE" | "EN_REPARATION" | "CLOTURE"
@@ -2358,7 +2459,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["admin_central", "chef_camp"],
-      category_type: ["GEAR", "FOOD"],
+      category_type: ["GEAR", "FOOD", "SPARE_PARTS"],
       fuel_type: ["ESSENCE", "DIESEL", "GPL"],
       gender_type: ["homme", "femme", "unisexe"],
       incident_status: ["DECLARE", "EN_EXPERTISE", "EN_REPARATION", "CLOTURE"],

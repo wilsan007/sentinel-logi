@@ -21,7 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Shirt, UtensilsCrossed, ArrowRight, ArrowLeft } from "lucide-react";
+import { Loader2, Shirt, UtensilsCrossed, ArrowRight, ArrowLeft, Wrench } from "lucide-react";
 
 type CategoryType = Database["public"]["Enums"]["category_type"];
 
@@ -49,7 +49,7 @@ export const CreateOrderDialog = ({
     const year = date.getFullYear();
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const random = Math.floor(Math.random() * 1000).toString().padStart(3, "0");
-    const prefix = category === "GEAR" ? "HAB" : "ALM";
+    const prefix = category === "GEAR" ? "HAB" : category === "FOOD" ? "ALM" : "PDR";
     return `${prefix}-${year}${month}-${random}`;
   };
 
@@ -128,7 +128,7 @@ export const CreateOrderDialog = ({
             <p className="text-sm text-muted-foreground text-center">
               Sélectionnez le type de commande
             </p>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-3 gap-4">
               <Card
                 className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
                   selectedCategory === "GEAR"
@@ -137,11 +137,11 @@ export const CreateOrderDialog = ({
                 }`}
                 onClick={() => handleCategorySelect("GEAR")}
               >
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-cyan-500/20 flex items-center justify-center">
-                    <Shirt className="h-6 w-6 text-cyan-500" />
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 rounded-full bg-cyan-500/20 flex items-center justify-center">
+                    <Shirt className="h-5 w-5 sm:h-6 sm:w-6 text-cyan-500" />
                   </div>
-                  <h4 className="font-semibold text-cyan-500">Habillement</h4>
+                  <h4 className="font-semibold text-cyan-500 text-sm sm:text-base">Habillement</h4>
                 </CardContent>
               </Card>
 
@@ -153,11 +153,27 @@ export const CreateOrderDialog = ({
                 }`}
                 onClick={() => handleCategorySelect("FOOD")}
               >
-                <CardContent className="p-6 text-center">
-                  <div className="w-12 h-12 mx-auto mb-3 rounded-full bg-amber-500/20 flex items-center justify-center">
-                    <UtensilsCrossed className="h-6 w-6 text-amber-500" />
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 rounded-full bg-amber-500/20 flex items-center justify-center">
+                    <UtensilsCrossed className="h-5 w-5 sm:h-6 sm:w-6 text-amber-500" />
                   </div>
-                  <h4 className="font-semibold text-amber-500">Alimentaire</h4>
+                  <h4 className="font-semibold text-amber-500 text-sm sm:text-base">Alimentaire</h4>
+                </CardContent>
+              </Card>
+
+              <Card
+                className={`cursor-pointer transition-all duration-200 hover:scale-105 ${
+                  selectedCategory === "SPARE_PARTS"
+                    ? "border-orange-500 bg-orange-500/10 ring-2 ring-orange-500"
+                    : "border-border/50 hover:border-orange-500/50"
+                }`}
+                onClick={() => handleCategorySelect("SPARE_PARTS" as CategoryType)}
+              >
+                <CardContent className="p-4 sm:p-6 text-center">
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-2 sm:mb-3 rounded-full bg-orange-500/20 flex items-center justify-center">
+                    <Wrench className="h-5 w-5 sm:h-6 sm:w-6 text-orange-500" />
+                  </div>
+                  <h4 className="font-semibold text-orange-500 text-sm sm:text-base">Pièces Détachées</h4>
                 </CardContent>
               </Card>
             </div>
@@ -195,7 +211,7 @@ export const CreateOrderDialog = ({
                 className="glass border-border/50"
               />
               <p className="text-xs text-muted-foreground">
-                Préfixe automatique: {selectedCategory === "GEAR" ? "HAB" : "ALM"} pour {selectedCategory === "GEAR" ? "Habillement" : "Alimentaire"}
+                Préfixe automatique: {selectedCategory === "GEAR" ? "HAB" : selectedCategory === "FOOD" ? "ALM" : "PDR"} pour {selectedCategory === "GEAR" ? "Habillement" : selectedCategory === "FOOD" ? "Alimentaire" : "Pièces Détachées"}
               </p>
             </div>
 
