@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Loader2, Car, ArrowLeft, Wrench, Fuel, AlertTriangle, FileText, Settings, ClipboardCheck, Package, CalendarDays } from "lucide-react";
+import { Loader2, Car, ArrowLeft, Wrench, Fuel, AlertTriangle, FileText, Settings, ClipboardCheck, Package, CalendarDays, LayoutDashboard } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FleetVehiclesList } from "@/components/fleet/FleetVehiclesList";
 import { FleetMaintenanceManager } from "@/components/fleet/FleetMaintenanceManager";
@@ -14,12 +14,13 @@ import { FleetDocumentsManager } from "@/components/fleet/FleetDocumentsManager"
 import { GarageIntakesList } from "@/components/fleet/GarageIntakesList";
 import { SparePartsManager } from "@/components/fleet/SparePartsManager";
 import { MaintenanceScheduler } from "@/components/fleet/MaintenanceScheduler";
+import { FleetDashboard } from "@/components/fleet/FleetDashboard";
 
 export default function Fleet() {
   const [user, setUser] = useState<User | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("intake");
+  const [activeTab, setActiveTab] = useState("dashboard");
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -103,7 +104,11 @@ export default function Fleet() {
         {/* Contenu principal */}
         <main className="container mx-auto px-4 py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="glass grid grid-cols-9 w-full max-w-6xl mx-auto">
+            <TabsList className="glass grid grid-cols-10 w-full max-w-7xl mx-auto">
+              <TabsTrigger value="dashboard" className="gap-1 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="hidden lg:inline">Dashboard</span>
+              </TabsTrigger>
               <TabsTrigger value="intake" className="gap-1 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
                 <ClipboardCheck className="h-4 w-4" />
                 <span className="hidden lg:inline">Réception</span>
@@ -141,6 +146,10 @@ export default function Fleet() {
                 <span className="hidden lg:inline">Documents</span>
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="dashboard">
+              <FleetDashboard />
+            </TabsContent>
 
             <TabsContent value="intake">
               <GarageIntakesList />

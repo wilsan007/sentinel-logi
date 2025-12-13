@@ -6,10 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Plus, Search, Car, Loader2, Edit, Trash2 } from "lucide-react";
+import { Plus, Search, Car, Loader2, Edit, Trash2, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { VehicleFormDialog } from "./VehicleFormDialog";
+import { VehicleHistoryDialog } from "./VehicleHistoryDialog";
 import { Database } from "@/integrations/supabase/types";
+import { differenceInMonths, differenceInYears, format } from "date-fns";
 
 type Vehicle = Database["public"]["Tables"]["vehicles"]["Row"];
 type VehicleStatus = Database["public"]["Enums"]["vehicle_status"];
@@ -36,8 +38,20 @@ export function FleetVehiclesList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDialog, setShowDialog] = useState(false);
   const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [historyVehicle, setHistoryVehicle] = useState<Vehicle | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  const calculateAge = (dateStr: string | null) => {
+    if (!dateStr) return null;
+    const date = new Date(dateStr);
+    const years = differenceInYears(new Date(), date);
+    const months = differenceInMonths(new Date(), date) % 12;
+    if (years > 0) {
+      return `${years} an${years > 1 ? "s" : ""}${months > 0 ? ` ${months} mois` : ""}`;
+    }
+    return `${months} mois`;
+  };
 
   const { data: vehicles, isLoading } = useQuery({
     queryKey: ["vehicles"],
@@ -126,8 +140,8 @@ export function FleetVehiclesList() {
                   <TableHead>Immatriculation</TableHead>
                   <TableHead>Type</TableHead>
                   <TableHead>Marque / Modèle</TableHead>
+                  <TableHead>Mise en service</TableHead>
                   <TableHead>Département</TableHead>
-                  <TableHead>N° Carte grise</TableHead>
                   <TableHead>Conducteur principal</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -144,10 +158,20 @@ export function FleetVehiclesList() {
                       {vehicle.marque} {vehicle.modele}
                       {vehicle.annee && <span className="text-muted-foreground ml-1">({vehicle.annee})</span>}
                     </TableCell>
-                    <TableCell>{vehicle.location?.nom || "-"}</TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {vehicle.carte_grise_numero || "-"}
+                    <TableCell>
+                      {vehicle.date_mise_en_service ? (
+                        <div>
+                          <span className="text-xs text-muted-foreground">
+                            {format(new Date(vehicle.date_mise_en_service), "dd/MM/yyyy")}
+                          </span>
+                          <br />
+                          <Badge variant="outline" className="text-xs">
+                            {calculateAge(vehicle.date_mise_en_service)}
+                          </Badge>
+                        </div>
+                      ) : "-"}
                     </TableCell>
+                    <TableCell>{vehicle.location?.nom || "-"}</TableCell>
                     <TableCell>
                       {vehicle.conducteur 
                         ? `${vehicle.conducteur.prenom} ${vehicle.conducteur.nom}`
@@ -160,7 +184,15 @@ export function FleetVehiclesList() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
+                      <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => setHistoryVehicle(vehicle)}
+                          title="Historique"
+                        >
+                          <History className="h-4 w-4 text-blue-500" />
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
@@ -194,6 +226,12 @@ export function FleetVehiclesList() {
         open={showDialog}
         onOpenChange={handleCloseDialog}
         vehicle={editingVehicle}
+      />
+
+      <VehicleHistoryDialog
+        open={!!historyVehicle}
+        onOpenChange={(open) => !open && setHistoryVehicle(null)}
+        vehicle={historyVehicle}
       />
     </Card>
   );

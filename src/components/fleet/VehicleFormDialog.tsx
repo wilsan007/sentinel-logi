@@ -28,6 +28,7 @@ const vehicleSchema = z.object({
   carte_grise_numero: z.string().optional(),
   assurance_dossier_numero: z.string().optional(),
   conducteur_principal_id: z.string().optional(),
+  date_mise_en_service: z.string().optional(),
 });
 
 type VehicleFormValues = z.infer<typeof vehicleSchema>;
@@ -103,9 +104,10 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
         annee: vehicle.annee || undefined,
         modele: vehicle.modele,
         vin: vehicle.vin || undefined,
-        carte_grise_numero: (vehicle as any).carte_grise_numero || undefined,
-        assurance_dossier_numero: (vehicle as any).assurance_dossier_numero || undefined,
+        carte_grise_numero: vehicle.carte_grise_numero || undefined,
+        assurance_dossier_numero: vehicle.assurance_dossier_numero || undefined,
         conducteur_principal_id: vehicle.conducteur_principal_id || undefined,
+        date_mise_en_service: vehicle.date_mise_en_service || undefined,
       });
     } else {
       form.reset({
@@ -114,6 +116,7 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
         vehicle_type: "VOITURE",
         marque: "",
         modele: "",
+        date_mise_en_service: undefined,
       });
       setAuthorizedDriverIds([]);
     }
@@ -138,6 +141,7 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
         carte_grise_numero: values.carte_grise_numero || null,
         assurance_dossier_numero: values.assurance_dossier_numero || null,
         conducteur_principal_id: values.conducteur_principal_id || null,
+        date_mise_en_service: values.date_mise_en_service || null,
         // Keep existing fields with defaults
         fuel_type: "DIESEL" as const,
         status: "OPERATIONNEL" as const,
@@ -353,6 +357,21 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
                     <FormLabel>N° Dossier assurance</FormLabel>
                     <FormControl>
                       <Input placeholder="ASS-789012" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              {/* Date de mise en service */}
+              <FormField
+                control={form.control}
+                name="date_mise_en_service"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Date de mise en service</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
