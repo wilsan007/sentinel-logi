@@ -6,11 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Car, Loader2, CheckCircle, Clock, AlertTriangle } from "lucide-react";
+import { Plus, Search, Car, Loader2, CheckCircle, Clock, AlertTriangle, Stethoscope } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { GarageIntakeWizard } from "./GarageIntakeWizard";
-
+import { DiagnosticDialog } from "./DiagnosticDialog";
 const MOTIF_LABELS: Record<string, { label: string; color: string }> = {
   REVISION: { label: "Révision", color: "bg-blue-500/20 text-blue-500" },
   PANNE: { label: "Panne", color: "bg-red-500/20 text-red-500" },
@@ -40,7 +40,8 @@ const SERVICE_LABELS: Record<string, string> = {
 export function GarageIntakesList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showWizard, setShowWizard] = useState(false);
-
+  const [selectedIntake, setSelectedIntake] = useState<any>(null);
+  const [showDiagnostic, setShowDiagnostic] = useState(false);
   const { data: intakes, isLoading } = useQuery({
     queryKey: ["garage-intakes"],
     queryFn: async () => {
@@ -107,9 +108,10 @@ export function GarageIntakesList() {
                   <TableHead>Kilométrage</TableHead>
                   <TableHead>Conducteur</TableHead>
                   <TableHead>Service</TableHead>
-                  <TableHead>Statut</TableHead>
-                </TableRow>
-              </TableHeader>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
               <TableBody>
                 {filteredIntakes.map((intake: any) => (
                   <TableRow key={intake.id}>
@@ -165,6 +167,20 @@ export function GarageIntakesList() {
                         {STATUT_LABELS[intake.statut]?.label || intake.statut}
                       </Badge>
                     </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedIntake(intake);
+                          setShowDiagnostic(true);
+                        }}
+                        className="gap-1"
+                      >
+                        <Stethoscope className="h-3 w-3" />
+                        Diagnostic
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -179,6 +195,14 @@ export function GarageIntakesList() {
       </CardContent>
 
       <GarageIntakeWizard open={showWizard} onOpenChange={setShowWizard} />
+      
+      {selectedIntake && (
+        <DiagnosticDialog
+          open={showDiagnostic}
+          onOpenChange={setShowDiagnostic}
+          intake={selectedIntake}
+        />
+      )}
     </Card>
   );
 }
