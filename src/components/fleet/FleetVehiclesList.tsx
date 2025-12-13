@@ -110,13 +110,13 @@ export function FleetVehiclesList() {
 
   return (
     <Card className="glass border-amber-500/30">
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="px-3 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-amber-500">
             <Car className="h-5 w-5" />
-            Véhicules ({vehicles?.length || 0})
+            <span className="text-base sm:text-lg">Véhicules ({vehicles?.length || 0})</span>
           </CardTitle>
-          <Button onClick={() => setShowDialog(true)} className="gap-2 bg-amber-500 hover:bg-amber-600">
+          <Button onClick={() => setShowDialog(true)} className="gap-2 bg-amber-500 hover:bg-amber-600 w-full sm:w-auto">
             <Plus className="h-4 w-4" />
             Nouveau véhicule
           </Button>
@@ -124,96 +124,124 @@ export function FleetVehiclesList() {
         <div className="relative mt-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher par immatriculation, marque, modèle..."
+            placeholder="Rechercher..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6">
         {filteredVehicles && filteredVehicles.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Immatriculation</TableHead>
-                  <TableHead>Type</TableHead>
-                  <TableHead>Marque / Modèle</TableHead>
-                  <TableHead>Mise en service</TableHead>
-                  <TableHead>Département</TableHead>
-                  <TableHead>Conducteur principal</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredVehicles.map((vehicle: any) => (
-                  <TableRow key={vehicle.id}>
-                    <TableCell className="font-mono font-bold text-amber-500">
-                      {vehicle.immatriculation}
-                    </TableCell>
-                    <TableCell>{TYPE_LABELS[vehicle.vehicle_type as VehicleType]}</TableCell>
-                    <TableCell>
-                      {vehicle.marque} {vehicle.modele}
-                      {vehicle.annee && <span className="text-muted-foreground ml-1">({vehicle.annee})</span>}
-                    </TableCell>
-                    <TableCell>
-                      {vehicle.date_mise_en_service ? (
-                        <div>
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(vehicle.date_mise_en_service), "dd/MM/yyyy")}
-                          </span>
-                          <br />
-                          <Badge variant="outline" className="text-xs">
-                            {calculateAge(vehicle.date_mise_en_service)}
-                          </Badge>
-                        </div>
-                      ) : "-"}
-                    </TableCell>
-                    <TableCell>{vehicle.location?.nom || "-"}</TableCell>
-                    <TableCell>
-                      {vehicle.conducteur 
-                        ? `${vehicle.conducteur.prenom} ${vehicle.conducteur.nom}`
-                        : "-"
-                      }
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={STATUS_LABELS[vehicle.status as VehicleStatus].color}>
-                        {STATUS_LABELS[vehicle.status as VehicleStatus].label}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setHistoryVehicle(vehicle)}
-                          title="Historique"
-                        >
-                          <History className="h-4 w-4 text-blue-500" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleEdit(vehicle)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => deleteMutation.mutate(vehicle.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
+          <>
+            {/* Vue mobile - Cards */}
+            <div className="block md:hidden space-y-3">
+              {filteredVehicles.map((vehicle: any) => (
+                <div key={vehicle.id} className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-amber-500">{vehicle.immatriculation}</span>
+                    <Badge className={STATUS_LABELS[vehicle.status as VehicleStatus].color}>
+                      {STATUS_LABELS[vehicle.status as VehicleStatus].label}
+                    </Badge>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {vehicle.marque} {vehicle.modele} {vehicle.annee && `(${vehicle.annee})`}
+                  </div>
+                  <div className="flex flex-wrap gap-2 text-xs">
+                    <Badge variant="outline">{TYPE_LABELS[vehicle.vehicle_type as VehicleType]}</Badge>
+                    {vehicle.date_mise_en_service && (
+                      <Badge variant="outline">{calculateAge(vehicle.date_mise_en_service)}</Badge>
+                    )}
+                  </div>
+                  {vehicle.conducteur && (
+                    <p className="text-xs text-muted-foreground">
+                      Conducteur: {vehicle.conducteur.prenom} {vehicle.conducteur.nom}
+                    </p>
+                  )}
+                  <div className="flex justify-end gap-1 pt-2 border-t border-border/30">
+                    <Button variant="ghost" size="sm" onClick={() => setHistoryVehicle(vehicle)}>
+                      <History className="h-4 w-4 text-blue-500" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleEdit(vehicle)}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => deleteMutation.mutate(vehicle.id)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Vue desktop - Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Immatriculation</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Marque / Modèle</TableHead>
+                    <TableHead>Mise en service</TableHead>
+                    <TableHead>Département</TableHead>
+                    <TableHead>Conducteur</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                </TableHeader>
+                <TableBody>
+                  {filteredVehicles.map((vehicle: any) => (
+                    <TableRow key={vehicle.id}>
+                      <TableCell className="font-mono font-bold text-amber-500">
+                        {vehicle.immatriculation}
+                      </TableCell>
+                      <TableCell>{TYPE_LABELS[vehicle.vehicle_type as VehicleType]}</TableCell>
+                      <TableCell>
+                        {vehicle.marque} {vehicle.modele}
+                        {vehicle.annee && <span className="text-muted-foreground ml-1">({vehicle.annee})</span>}
+                      </TableCell>
+                      <TableCell>
+                        {vehicle.date_mise_en_service ? (
+                          <div>
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(vehicle.date_mise_en_service), "dd/MM/yyyy")}
+                            </span>
+                            <br />
+                            <Badge variant="outline" className="text-xs">
+                              {calculateAge(vehicle.date_mise_en_service)}
+                            </Badge>
+                          </div>
+                        ) : "-"}
+                      </TableCell>
+                      <TableCell>{vehicle.location?.nom || "-"}</TableCell>
+                      <TableCell>
+                        {vehicle.conducteur 
+                          ? `${vehicle.conducteur.prenom} ${vehicle.conducteur.nom}`
+                          : "-"
+                        }
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={STATUS_LABELS[vehicle.status as VehicleStatus].color}>
+                          {STATUS_LABELS[vehicle.status as VehicleStatus].label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button variant="ghost" size="icon" onClick={() => setHistoryVehicle(vehicle)} title="Historique">
+                            <History className="h-4 w-4 text-blue-500" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(vehicle)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => deleteMutation.mutate(vehicle.id)}>
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         ) : (
           <div className="text-center py-12 text-muted-foreground">
             <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />

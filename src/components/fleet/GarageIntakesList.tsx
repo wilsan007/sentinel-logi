@@ -97,13 +97,13 @@ export function GarageIntakesList() {
 
   return (
     <Card className="glass border-amber-500/30">
-      <CardHeader>
-        <div className="flex items-center justify-between">
+      <CardHeader className="px-3 sm:px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-amber-500">
             <Car className="h-5 w-5" />
-            Réceptions garage ({intakes?.length || 0})
+            <span className="text-base sm:text-lg">Réceptions garage ({intakes?.length || 0})</span>
           </CardTitle>
-          <Button onClick={() => setShowWizard(true)} className="gap-2 bg-amber-500 hover:bg-amber-600">
+          <Button onClick={() => setShowWizard(true)} className="gap-2 bg-amber-500 hover:bg-amber-600 w-full sm:w-auto">
             <Plus className="h-4 w-4" />
             Nouvelle réception
           </Button>
@@ -111,120 +111,159 @@ export function GarageIntakesList() {
         <div className="relative mt-4">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Rechercher par immatriculation..."
+            placeholder="Rechercher..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
           />
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="px-3 sm:px-6">
         {filteredIntakes && filteredIntakes.length > 0 ? (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Véhicule</TableHead>
-                  <TableHead>Motif</TableHead>
-                  <TableHead>Kilométrage</TableHead>
-                  <TableHead>Conducteur</TableHead>
-                  <TableHead>Service</TableHead>
+          <>
+            {/* Vue mobile - Cards */}
+            <div className="block lg:hidden space-y-3">
+              {filteredIntakes.map((intake: any) => (
+                <div key={intake.id} className="p-3 rounded-lg bg-muted/30 border border-border/50 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="font-mono font-bold text-amber-500">{intake.vehicle?.immatriculation}</span>
+                    <Badge className={`flex items-center gap-1 ${STATUT_LABELS[intake.statut]?.color || ""}`}>
+                      {STATUT_LABELS[intake.statut]?.icon}
+                      {STATUT_LABELS[intake.statut]?.label || intake.statut}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {intake.vehicle?.marque} {intake.vehicle?.modele}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge className={MOTIF_LABELS[intake.motif]?.color || ""}>
+                      {MOTIF_LABELS[intake.motif]?.label || intake.motif}
+                    </Badge>
+                    <span className="text-xs text-muted-foreground">{intake.kilometrage_arrivee?.toLocaleString()} km</span>
+                  </div>
+                  <div className="text-xs text-muted-foreground">
+                    {format(new Date(intake.date_arrivee), "dd/MM/yyyy HH:mm", { locale: fr })}
+                    {intake.conducteur && ` • ${intake.conducteur.prenom} ${intake.conducteur.nom}`}
+                  </div>
+                  <div className="flex flex-wrap gap-2 pt-2 border-t border-border/30">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => { setSelectedIntake(intake); setShowDiagnostic(true); }}
+                      className="gap-1 flex-1"
+                    >
+                      <Stethoscope className="h-3 w-3" />
+                      Diagnostic
+                    </Button>
+                    {diagnostics?.find((d: any) => d.intake_id === intake.id) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          const diag = diagnostics.find((d: any) => d.intake_id === intake.id);
+                          setSelectedDiagnostic(diag);
+                          setShowValidation(true);
+                        }}
+                        className="gap-1 border-green-500 text-green-500 flex-1"
+                      >
+                        <ClipboardCheck className="h-3 w-3" />
+                        Valider
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Vue desktop - Table */}
+            <div className="hidden lg:block overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Véhicule</TableHead>
+                    <TableHead>Motif</TableHead>
+                    <TableHead>Kilométrage</TableHead>
+                    <TableHead>Conducteur</TableHead>
+                    <TableHead>Service</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
-              <TableBody>
-                {filteredIntakes.map((intake: any) => (
-                  <TableRow key={intake.id}>
-                    <TableCell className="whitespace-nowrap">
-                      {format(new Date(intake.date_arrivee), "dd/MM/yyyy HH:mm", { locale: fr })}
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-mono font-bold text-amber-500">
-                        {intake.vehicle?.immatriculation}
-                      </div>
-                      <div className="text-xs text-muted-foreground">
-                        {intake.vehicle?.marque} {intake.vehicle?.modele}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={MOTIF_LABELS[intake.motif]?.color || ""}>
-                        {MOTIF_LABELS[intake.motif]?.label || intake.motif}
-                      </Badge>
-                      {intake.motif_precision && (
-                        <p className="text-xs text-muted-foreground mt-1 max-w-[200px] truncate">
-                          {intake.motif_precision}
-                        </p>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {intake.kilometrage_arrivee?.toLocaleString()} km
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {intake.conducteur 
-                          ? `${intake.conducteur.prenom} ${intake.conducteur.nom}`
-                          : "-"
-                        }
-                        {intake.is_authorized_driver ? (
-                          <Badge variant="outline" className="text-green-500 border-green-500">
-                            <CheckCircle className="h-3 w-3 mr-1" />
-                            Autorisé
-                          </Badge>
-                        ) : intake.conducteur && (
-                          <Badge variant="outline" className="text-orange-500 border-orange-500">
-                            <AlertTriangle className="h-3 w-3 mr-1" />
-                            Non autorisé
-                          </Badge>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {SERVICE_LABELS[intake.service_oriente] || intake.service_oriente}
-                    </TableCell>
-                    <TableCell>
-                      <Badge className={`flex items-center gap-1 w-fit ${STATUT_LABELS[intake.statut]?.color || ""}`}>
-                        {STATUT_LABELS[intake.statut]?.icon}
-                        {STATUT_LABELS[intake.statut]?.label || intake.statut}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => {
-                            setSelectedIntake(intake);
-                            setShowDiagnostic(true);
-                          }}
-                          className="gap-1"
-                        >
-                          <Stethoscope className="h-3 w-3" />
-                          Diagnostic
-                        </Button>
-                        {diagnostics?.find((d: any) => d.intake_id === intake.id) && (
+                <TableBody>
+                  {filteredIntakes.map((intake: any) => (
+                    <TableRow key={intake.id}>
+                      <TableCell className="whitespace-nowrap">
+                        {format(new Date(intake.date_arrivee), "dd/MM/yyyy HH:mm", { locale: fr })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-mono font-bold text-amber-500">
+                          {intake.vehicle?.immatriculation}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {intake.vehicle?.marque} {intake.vehicle?.modele}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={MOTIF_LABELS[intake.motif]?.color || ""}>
+                          {MOTIF_LABELS[intake.motif]?.label || intake.motif}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>{intake.kilometrage_arrivee?.toLocaleString()} km</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          {intake.conducteur ? `${intake.conducteur.prenom} ${intake.conducteur.nom}` : "-"}
+                          {intake.is_authorized_driver ? (
+                            <Badge variant="outline" className="text-green-500 border-green-500 text-xs">
+                              <CheckCircle className="h-3 w-3 mr-1" />OK
+                            </Badge>
+                          ) : intake.conducteur && (
+                            <Badge variant="outline" className="text-orange-500 border-orange-500 text-xs">
+                              <AlertTriangle className="h-3 w-3" />
+                            </Badge>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>{SERVICE_LABELS[intake.service_oriente] || intake.service_oriente}</TableCell>
+                      <TableCell>
+                        <Badge className={`flex items-center gap-1 w-fit ${STATUT_LABELS[intake.statut]?.color || ""}`}>
+                          {STATUT_LABELS[intake.statut]?.icon}
+                          {STATUT_LABELS[intake.statut]?.label || intake.statut}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => {
-                              const diag = diagnostics.find((d: any) => d.intake_id === intake.id);
-                              setSelectedDiagnostic(diag);
-                              setShowValidation(true);
-                            }}
-                            className="gap-1 border-green-500 text-green-500"
+                            onClick={() => { setSelectedIntake(intake); setShowDiagnostic(true); }}
+                            className="gap-1"
                           >
-                            <ClipboardCheck className="h-3 w-3" />
-                            Valider
+                            <Stethoscope className="h-3 w-3" />
+                            <span className="hidden xl:inline">Diagnostic</span>
                           </Button>
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                          {diagnostics?.find((d: any) => d.intake_id === intake.id) && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                const diag = diagnostics.find((d: any) => d.intake_id === intake.id);
+                                setSelectedDiagnostic(diag);
+                                setShowValidation(true);
+                              }}
+                              className="gap-1 border-green-500 text-green-500"
+                            >
+                              <ClipboardCheck className="h-3 w-3" />
+                              <span className="hidden xl:inline">Valider</span>
+                            </Button>
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </>
         ) : (
           <div className="text-center py-12 text-muted-foreground">
             <Car className="h-12 w-12 mx-auto mb-4 opacity-50" />

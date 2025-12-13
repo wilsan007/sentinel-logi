@@ -62,39 +62,39 @@ export default function Fleet() {
     <div className="min-h-screen relative overflow-hidden">
       {/* Fond animé */}
       <div className="absolute inset-0 bg-background">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-amber-500/20 rounded-full blur-[120px] animate-glow-pulse"></div>
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-orange-500/20 rounded-full blur-[120px] animate-glow-pulse" style={{ animationDelay: "1s" }}></div>
+        <div className="absolute top-1/4 left-1/4 w-64 md:w-96 h-64 md:h-96 bg-amber-500/20 rounded-full blur-[120px] animate-glow-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-64 md:w-96 h-64 md:h-96 bg-orange-500/20 rounded-full blur-[120px] animate-glow-pulse" style={{ animationDelay: "1s" }}></div>
       </div>
 
       {/* Contenu */}
       <div className="relative z-10">
         {/* Header */}
         <header className="glass border-b border-border/50 sticky top-0 backdrop-blur-xl z-20">
-          <div className="container mx-auto px-4 py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+          <div className="container mx-auto px-3 sm:px-4 py-3 sm:py-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2 sm:gap-4 min-w-0">
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={() => navigate("/")}
-                  className="gap-2"
+                  className="gap-1 sm:gap-2 shrink-0 px-2 sm:px-3"
                 >
                   <ArrowLeft className="h-4 w-4" />
-                  Retour
+                  <span className="hidden sm:inline">Retour</span>
                 </Button>
-                <div className="flex items-center gap-3">
-                  <Car className="h-8 w-8 text-amber-500" />
-                  <div>
-                    <h1 className="text-2xl font-bold text-amber-500">
+                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                  <Car className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500 shrink-0" />
+                  <div className="min-w-0">
+                    <h1 className="text-lg sm:text-2xl font-bold text-amber-500 truncate">
                       Parc Automobile
                     </h1>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
                       Gestion de la flotte de véhicules
                     </p>
                   </div>
                 </div>
               </div>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-xs sm:text-sm text-muted-foreground hidden md:block truncate">
                 {user?.email}
               </span>
             </div>
@@ -102,50 +102,53 @@ export default function Fleet() {
         </header>
 
         {/* Contenu principal */}
-        <main className="container mx-auto px-4 py-6">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="glass grid grid-cols-10 w-full max-w-7xl mx-auto">
-              <TabsTrigger value="dashboard" className="gap-1 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
-                <LayoutDashboard className="h-4 w-4" />
-                <span className="hidden lg:inline">Dashboard</span>
-              </TabsTrigger>
-              <TabsTrigger value="intake" className="gap-1 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
-                <ClipboardCheck className="h-4 w-4" />
-                <span className="hidden lg:inline">Réception</span>
-              </TabsTrigger>
-              <TabsTrigger value="vehicles" className="gap-1 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
-                <Car className="h-4 w-4" />
-                <span className="hidden lg:inline">Véhicules</span>
-              </TabsTrigger>
-              <TabsTrigger value="planning" className="gap-1 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500">
-                <CalendarDays className="h-4 w-4" />
-                <span className="hidden lg:inline">Planning</span>
-              </TabsTrigger>
-              <TabsTrigger value="maintenance" className="gap-1 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500">
-                <Settings className="h-4 w-4" />
-                <span className="hidden lg:inline">Entretiens</span>
-              </TabsTrigger>
-              <TabsTrigger value="repairs" className="gap-1 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-500">
-                <Wrench className="h-4 w-4" />
-                <span className="hidden lg:inline">Réparations</span>
-              </TabsTrigger>
-              <TabsTrigger value="parts" className="gap-1 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-500">
-                <Package className="h-4 w-4" />
-                <span className="hidden lg:inline">Pièces</span>
-              </TabsTrigger>
-              <TabsTrigger value="fuel" className="gap-1 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-500">
-                <Fuel className="h-4 w-4" />
-                <span className="hidden lg:inline">Carburant</span>
-              </TabsTrigger>
-              <TabsTrigger value="incidents" className="gap-1 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-500">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="hidden lg:inline">Sinistres</span>
-              </TabsTrigger>
-              <TabsTrigger value="documents" className="gap-1 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-500">
-                <FileText className="h-4 w-4" />
-                <span className="hidden lg:inline">Documents</span>
-              </TabsTrigger>
-            </TabsList>
+        <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
+            {/* TabsList scrollable horizontalement sur mobile */}
+            <div className="overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
+              <TabsList className="glass inline-flex w-max min-w-full sm:grid sm:grid-cols-10 sm:w-full max-w-7xl mx-auto gap-1">
+                <TabsTrigger value="dashboard" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500 whitespace-nowrap">
+                  <LayoutDashboard className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Dashboard</span>
+                </TabsTrigger>
+                <TabsTrigger value="intake" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500 whitespace-nowrap">
+                  <ClipboardCheck className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Réception</span>
+                </TabsTrigger>
+                <TabsTrigger value="vehicles" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500 whitespace-nowrap">
+                  <Car className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Véhicules</span>
+                </TabsTrigger>
+                <TabsTrigger value="planning" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500 whitespace-nowrap">
+                  <CalendarDays className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Planning</span>
+                </TabsTrigger>
+                <TabsTrigger value="maintenance" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500 whitespace-nowrap">
+                  <Settings className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Entretiens</span>
+                </TabsTrigger>
+                <TabsTrigger value="repairs" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-500 whitespace-nowrap">
+                  <Wrench className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Réparations</span>
+                </TabsTrigger>
+                <TabsTrigger value="parts" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-500 whitespace-nowrap">
+                  <Package className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Pièces</span>
+                </TabsTrigger>
+                <TabsTrigger value="fuel" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-500 whitespace-nowrap">
+                  <Fuel className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Carburant</span>
+                </TabsTrigger>
+                <TabsTrigger value="incidents" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-500 whitespace-nowrap">
+                  <AlertTriangle className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Sinistres</span>
+                </TabsTrigger>
+                <TabsTrigger value="documents" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-500 whitespace-nowrap">
+                  <FileText className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Documents</span>
+                </TabsTrigger>
+              </TabsList>
+            </div>
 
             <TabsContent value="dashboard">
               <FleetDashboard />
