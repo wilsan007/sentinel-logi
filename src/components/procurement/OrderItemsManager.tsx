@@ -249,7 +249,7 @@ export const OrderItemsManager = ({ orderId, currency = "XAF", onTotalChange, re
                     {Object.entries(groupedStockItems).map(([category, categoryItems]) => (
                       <div key={category}>
                         <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground bg-muted/50">
-                          {category === "GEAR" ? "🎽 Habillement" : "🍽️ Alimentaire"}
+                          {category === "GEAR" ? "🎽 Habillement" : category === "FOOD" ? "🍽️ Alimentaire" : "🔧 Pièces Détachées"}
                         </div>
                         {categoryItems
                           .filter((i) => !items.some((existing) => existing.stock_item_id === i.id))
@@ -320,7 +320,7 @@ export const OrderItemsManager = ({ orderId, currency = "XAF", onTotalChange, re
                         {item.stock_items?.sous_type && ` - ${item.stock_items.sous_type}`}
                       </p>
                       <Badge variant="secondary" className="text-xs mt-1">
-                        {item.stock_items?.categorie === "GEAR" ? "Habillement" : "Alimentaire"}
+                        {item.stock_items?.categorie === "GEAR" ? "Habillement" : item.stock_items?.categorie === "FOOD" ? "Alimentaire" : "Pièces Détachées"}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-3">

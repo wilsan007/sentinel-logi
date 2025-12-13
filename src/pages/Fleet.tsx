@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Loader2, Car, ArrowLeft, Wrench, Fuel, AlertTriangle, FileText, Settings, ClipboardCheck, Package, CalendarDays, LayoutDashboard } from "lucide-react";
+import { Loader2, Car, ArrowLeft, Wrench, Fuel, AlertTriangle, FileText, Settings, ClipboardCheck, Package, CalendarDays, LayoutDashboard, ShoppingCart } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FleetVehiclesList } from "@/components/fleet/FleetVehiclesList";
 import { FleetMaintenanceManager } from "@/components/fleet/FleetMaintenanceManager";
@@ -13,6 +13,7 @@ import { FleetIncidentsManager } from "@/components/fleet/FleetIncidentsManager"
 import { FleetDocumentsManager } from "@/components/fleet/FleetDocumentsManager";
 import { GarageIntakesList } from "@/components/fleet/GarageIntakesList";
 import { SparePartsManager } from "@/components/fleet/SparePartsManager";
+import { SparePartsRequestsList } from "@/components/fleet/SparePartsRequestsList";
 import { MaintenanceScheduler } from "@/components/fleet/MaintenanceScheduler";
 import { FleetDashboard } from "@/components/fleet/FleetDashboard";
 
@@ -106,7 +107,7 @@ export default function Fleet() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4 sm:space-y-6">
             {/* TabsList scrollable horizontalement sur mobile */}
             <div className="overflow-x-auto pb-2 -mx-2 px-2 scrollbar-hide">
-              <TabsList className="glass inline-flex w-max min-w-full sm:grid sm:grid-cols-10 sm:w-full max-w-7xl mx-auto gap-1">
+              <TabsList className="glass inline-flex w-max min-w-full sm:grid sm:grid-cols-11 sm:w-full max-w-7xl mx-auto gap-1">
                 <TabsTrigger value="dashboard" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500 whitespace-nowrap">
                   <LayoutDashboard className="h-4 w-4" />
                   <span className="hidden md:inline text-xs lg:text-sm">Dashboard</span>
@@ -134,6 +135,10 @@ export default function Fleet() {
                 <TabsTrigger value="parts" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-500 whitespace-nowrap">
                   <Package className="h-4 w-4" />
                   <span className="hidden md:inline text-xs lg:text-sm">Pièces</span>
+                </TabsTrigger>
+                <TabsTrigger value="parts-requests" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-500 whitespace-nowrap">
+                  <ShoppingCart className="h-4 w-4" />
+                  <span className="hidden md:inline text-xs lg:text-sm">Demandes</span>
                 </TabsTrigger>
                 <TabsTrigger value="fuel" className="gap-1 px-2 sm:px-3 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-500 whitespace-nowrap">
                   <Fuel className="h-4 w-4" />
@@ -176,6 +181,10 @@ export default function Fleet() {
 
             <TabsContent value="parts">
               <SparePartsManager />
+            </TabsContent>
+
+            <TabsContent value="parts-requests">
+              <SparePartsRequestsList />
             </TabsContent>
 
             <TabsContent value="fuel">
