@@ -497,6 +497,65 @@ export type Database = {
         }
         Relationships: []
       }
+      maintenance_schedules: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          date_prevue: string
+          description: string | null
+          id: string
+          kilometrage_prevu: number | null
+          notes: string | null
+          pieces_requises: string[] | null
+          priorite: string | null
+          rappel_envoye: boolean | null
+          statut: string | null
+          type_entretien: string
+          updated_at: string
+          vehicle_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          date_prevue: string
+          description?: string | null
+          id?: string
+          kilometrage_prevu?: number | null
+          notes?: string | null
+          pieces_requises?: string[] | null
+          priorite?: string | null
+          rappel_envoye?: boolean | null
+          statut?: string | null
+          type_entretien: string
+          updated_at?: string
+          vehicle_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          date_prevue?: string
+          description?: string | null
+          id?: string
+          kilometrage_prevu?: number | null
+          notes?: string | null
+          pieces_requises?: string[] | null
+          priorite?: string | null
+          rappel_envoye?: boolean | null
+          statut?: string | null
+          type_entretien?: string
+          updated_at?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maintenance_schedules_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       personnel: {
         Row: {
           actif: boolean
@@ -995,6 +1054,51 @@ export type Database = {
           },
         ]
       }
+      spare_parts: {
+        Row: {
+          categorie: string
+          created_at: string
+          description: string | null
+          emplacement_stock: string | null
+          fournisseur: string | null
+          id: string
+          nom: string
+          prix_unitaire: number | null
+          quantite: number
+          reference: string
+          seuil_alerte: number | null
+          updated_at: string
+        }
+        Insert: {
+          categorie: string
+          created_at?: string
+          description?: string | null
+          emplacement_stock?: string | null
+          fournisseur?: string | null
+          id?: string
+          nom: string
+          prix_unitaire?: number | null
+          quantite?: number
+          reference: string
+          seuil_alerte?: number | null
+          updated_at?: string
+        }
+        Update: {
+          categorie?: string
+          created_at?: string
+          description?: string | null
+          emplacement_stock?: string | null
+          fournisseur?: string | null
+          id?: string
+          nom?: string
+          prix_unitaire?: number | null
+          quantite?: number
+          reference?: string
+          seuil_alerte?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stock_items: {
         Row: {
           categorie: Database["public"]["Enums"]["category_type"]
@@ -1254,6 +1358,8 @@ export type Database = {
           created_at: string
           diagnostic_date: string | null
           diagnostic_resume: string | null
+          estimated_completion_date: string | null
+          estimated_hours: number | null
           id: string
           impressions_conducteur_validees: boolean | null
           intake_id: string
@@ -1261,6 +1367,11 @@ export type Database = {
           notes_mecanicien: string | null
           statut: string
           updated_at: string
+          validated_at: string | null
+          validated_by: string | null
+          validation_notes: string | null
+          validation_status: string | null
+          work_type: string | null
         }
         Insert: {
           assigned_at?: string | null
@@ -1268,6 +1379,8 @@ export type Database = {
           created_at?: string
           diagnostic_date?: string | null
           diagnostic_resume?: string | null
+          estimated_completion_date?: string | null
+          estimated_hours?: number | null
           id?: string
           impressions_conducteur_validees?: boolean | null
           intake_id: string
@@ -1275,6 +1388,11 @@ export type Database = {
           notes_mecanicien?: string | null
           statut?: string
           updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_notes?: string | null
+          validation_status?: string | null
+          work_type?: string | null
         }
         Update: {
           assigned_at?: string | null
@@ -1282,6 +1400,8 @@ export type Database = {
           created_at?: string
           diagnostic_date?: string | null
           diagnostic_resume?: string | null
+          estimated_completion_date?: string | null
+          estimated_hours?: number | null
           id?: string
           impressions_conducteur_validees?: boolean | null
           intake_id?: string
@@ -1289,6 +1409,11 @@ export type Database = {
           notes_mecanicien?: string | null
           statut?: string
           updated_at?: string
+          validated_at?: string | null
+          validated_by?: string | null
+          validation_notes?: string | null
+          validation_status?: string | null
+          work_type?: string | null
         }
         Relationships: [
           {
@@ -1598,11 +1723,14 @@ export type Database = {
           date_entretien: string
           description: string | null
           effectue_par: string | null
+          estimated_hours: number | null
           id: string
           kilometrage: number
+          pieces_requises: string[] | null
           prestataire: string | null
           prochain_entretien_date: string | null
           prochain_entretien_km: number | null
+          statut: string | null
           type_entretien: string
           updated_at: string
           vehicle_id: string
@@ -1613,11 +1741,14 @@ export type Database = {
           date_entretien: string
           description?: string | null
           effectue_par?: string | null
+          estimated_hours?: number | null
           id?: string
           kilometrage: number
+          pieces_requises?: string[] | null
           prestataire?: string | null
           prochain_entretien_date?: string | null
           prochain_entretien_km?: number | null
+          statut?: string | null
           type_entretien: string
           updated_at?: string
           vehicle_id: string
@@ -1628,11 +1759,14 @@ export type Database = {
           date_entretien?: string
           description?: string | null
           effectue_par?: string | null
+          estimated_hours?: number | null
           id?: string
           kilometrage?: number
+          pieces_requises?: string[] | null
           prestataire?: string | null
           prochain_entretien_date?: string | null
           prochain_entretien_km?: number | null
+          statut?: string | null
           type_entretien?: string
           updated_at?: string
           vehicle_id?: string
@@ -1647,6 +1781,67 @@ export type Database = {
           },
         ]
       }
+      vehicle_repair_parts: {
+        Row: {
+          created_at: string
+          diagnostic_id: string | null
+          id: string
+          is_available: boolean | null
+          part_name: string
+          prix_estime: number | null
+          quantity_available: number | null
+          quantity_needed: number
+          repair_id: string | null
+          spare_part_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          diagnostic_id?: string | null
+          id?: string
+          is_available?: boolean | null
+          part_name: string
+          prix_estime?: number | null
+          quantity_available?: number | null
+          quantity_needed?: number
+          repair_id?: string | null
+          spare_part_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          diagnostic_id?: string | null
+          id?: string
+          is_available?: boolean | null
+          part_name?: string
+          prix_estime?: number | null
+          quantity_available?: number | null
+          quantity_needed?: number
+          repair_id?: string | null
+          spare_part_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_repair_parts_diagnostic_id_fkey"
+            columns: ["diagnostic_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_diagnostics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_repair_parts_repair_id_fkey"
+            columns: ["repair_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_repairs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_repair_parts_spare_part_id_fkey"
+            columns: ["spare_part_id"]
+            isOneToOne: false
+            referencedRelation: "spare_parts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_repairs: {
         Row: {
           cout_main_oeuvre: number | null
@@ -1656,13 +1851,16 @@ export type Database = {
           date_debut: string
           date_fin: string | null
           description: string
+          diagnostic_id: string | null
           effectue_par: string | null
           est_termine: boolean | null
+          estimated_hours: number | null
           garage: string | null
           id: string
           kilometrage: number | null
           pieces_changees: string[] | null
           repair_type: Database["public"]["Enums"]["repair_type"]
+          statut: string | null
           updated_at: string
           vehicle_id: string
         }
@@ -1674,13 +1872,16 @@ export type Database = {
           date_debut: string
           date_fin?: string | null
           description: string
+          diagnostic_id?: string | null
           effectue_par?: string | null
           est_termine?: boolean | null
+          estimated_hours?: number | null
           garage?: string | null
           id?: string
           kilometrage?: number | null
           pieces_changees?: string[] | null
           repair_type: Database["public"]["Enums"]["repair_type"]
+          statut?: string | null
           updated_at?: string
           vehicle_id: string
         }
@@ -1692,17 +1893,27 @@ export type Database = {
           date_debut?: string
           date_fin?: string | null
           description?: string
+          diagnostic_id?: string | null
           effectue_par?: string | null
           est_termine?: boolean | null
+          estimated_hours?: number | null
           garage?: string | null
           id?: string
           kilometrage?: number | null
           pieces_changees?: string[] | null
           repair_type?: Database["public"]["Enums"]["repair_type"]
+          statut?: string | null
           updated_at?: string
           vehicle_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "vehicle_repairs_diagnostic_id_fkey"
+            columns: ["diagnostic_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_diagnostics"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "vehicle_repairs_vehicle_id_fkey"
             columns: ["vehicle_id"]
@@ -1722,6 +1933,7 @@ export type Database = {
           consommation_moyenne: number | null
           couleur: string | null
           created_at: string
+          date_mise_en_service: string | null
           fuel_type: Database["public"]["Enums"]["fuel_type"]
           id: string
           immatriculation: string
@@ -1745,6 +1957,7 @@ export type Database = {
           consommation_moyenne?: number | null
           couleur?: string | null
           created_at?: string
+          date_mise_en_service?: string | null
           fuel_type?: Database["public"]["Enums"]["fuel_type"]
           id?: string
           immatriculation: string
@@ -1768,6 +1981,7 @@ export type Database = {
           consommation_moyenne?: number | null
           couleur?: string | null
           created_at?: string
+          date_mise_en_service?: string | null
           fuel_type?: Database["public"]["Enums"]["fuel_type"]
           id?: string
           immatriculation?: string

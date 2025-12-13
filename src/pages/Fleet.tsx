@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Loader2, Car, ArrowLeft, Wrench, Fuel, AlertTriangle, FileText, Settings, ClipboardCheck } from "lucide-react";
+import { Loader2, Car, ArrowLeft, Wrench, Fuel, AlertTriangle, FileText, Settings, ClipboardCheck, Package, CalendarDays } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FleetVehiclesList } from "@/components/fleet/FleetVehiclesList";
 import { FleetMaintenanceManager } from "@/components/fleet/FleetMaintenanceManager";
@@ -12,6 +12,8 @@ import { FleetFuelManager } from "@/components/fleet/FleetFuelManager";
 import { FleetIncidentsManager } from "@/components/fleet/FleetIncidentsManager";
 import { FleetDocumentsManager } from "@/components/fleet/FleetDocumentsManager";
 import { GarageIntakesList } from "@/components/fleet/GarageIntakesList";
+import { SparePartsManager } from "@/components/fleet/SparePartsManager";
+import { MaintenanceScheduler } from "@/components/fleet/MaintenanceScheduler";
 
 export default function Fleet() {
   const [user, setUser] = useState<User | null>(null);
@@ -101,34 +103,42 @@ export default function Fleet() {
         {/* Contenu principal */}
         <main className="container mx-auto px-4 py-6">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-            <TabsList className="glass grid grid-cols-7 w-full max-w-5xl mx-auto">
-              <TabsTrigger value="intake" className="gap-2 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
+            <TabsList className="glass grid grid-cols-9 w-full max-w-6xl mx-auto">
+              <TabsTrigger value="intake" className="gap-1 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
                 <ClipboardCheck className="h-4 w-4" />
-                <span className="hidden md:inline">Réception</span>
+                <span className="hidden lg:inline">Réception</span>
               </TabsTrigger>
-              <TabsTrigger value="vehicles" className="gap-2 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
+              <TabsTrigger value="vehicles" className="gap-1 data-[state=active]:bg-amber-500/20 data-[state=active]:text-amber-500">
                 <Car className="h-4 w-4" />
-                <span className="hidden md:inline">Véhicules</span>
+                <span className="hidden lg:inline">Véhicules</span>
               </TabsTrigger>
-              <TabsTrigger value="maintenance" className="gap-2 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500">
+              <TabsTrigger value="planning" className="gap-1 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500">
+                <CalendarDays className="h-4 w-4" />
+                <span className="hidden lg:inline">Planning</span>
+              </TabsTrigger>
+              <TabsTrigger value="maintenance" className="gap-1 data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-500">
                 <Settings className="h-4 w-4" />
-                <span className="hidden md:inline">Entretiens</span>
+                <span className="hidden lg:inline">Entretiens</span>
               </TabsTrigger>
-              <TabsTrigger value="repairs" className="gap-2 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-500">
+              <TabsTrigger value="repairs" className="gap-1 data-[state=active]:bg-red-500/20 data-[state=active]:text-red-500">
                 <Wrench className="h-4 w-4" />
-                <span className="hidden md:inline">Réparations</span>
+                <span className="hidden lg:inline">Réparations</span>
               </TabsTrigger>
-              <TabsTrigger value="fuel" className="gap-2 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-500">
+              <TabsTrigger value="parts" className="gap-1 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-500">
+                <Package className="h-4 w-4" />
+                <span className="hidden lg:inline">Pièces</span>
+              </TabsTrigger>
+              <TabsTrigger value="fuel" className="gap-1 data-[state=active]:bg-green-500/20 data-[state=active]:text-green-500">
                 <Fuel className="h-4 w-4" />
-                <span className="hidden md:inline">Carburant</span>
+                <span className="hidden lg:inline">Carburant</span>
               </TabsTrigger>
-              <TabsTrigger value="incidents" className="gap-2 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-500">
+              <TabsTrigger value="incidents" className="gap-1 data-[state=active]:bg-orange-500/20 data-[state=active]:text-orange-500">
                 <AlertTriangle className="h-4 w-4" />
-                <span className="hidden md:inline">Sinistres</span>
+                <span className="hidden lg:inline">Sinistres</span>
               </TabsTrigger>
-              <TabsTrigger value="documents" className="gap-2 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-500">
+              <TabsTrigger value="documents" className="gap-1 data-[state=active]:bg-purple-500/20 data-[state=active]:text-purple-500">
                 <FileText className="h-4 w-4" />
-                <span className="hidden md:inline">Documents</span>
+                <span className="hidden lg:inline">Documents</span>
               </TabsTrigger>
             </TabsList>
 
@@ -140,12 +150,20 @@ export default function Fleet() {
               <FleetVehiclesList />
             </TabsContent>
 
+            <TabsContent value="planning">
+              <MaintenanceScheduler />
+            </TabsContent>
+
             <TabsContent value="maintenance">
               <FleetMaintenanceManager />
             </TabsContent>
 
             <TabsContent value="repairs">
               <FleetRepairsManager />
+            </TabsContent>
+
+            <TabsContent value="parts">
+              <SparePartsManager />
             </TabsContent>
 
             <TabsContent value="fuel">
