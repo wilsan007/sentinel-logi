@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -18,9 +19,11 @@ import {
   XCircle,
   Clock,
   LayoutDashboard,
+  Plus,
 } from "lucide-react";
 import { format, startOfMonth, endOfMonth } from "date-fns";
 import { fr } from "date-fns/locale";
+import { GarageIntakeWizard } from "./GarageIntakeWizard";
 
 interface FleetHomeProps {
   onNavigate: (tab: string) => void;
@@ -36,6 +39,8 @@ const SERVICE_LABELS: Record<string, string> = {
 };
 
 export function FleetHome({ onNavigate }: FleetHomeProps) {
+  const [showIntakeWizard, setShowIntakeWizard] = useState(false);
+
   // Statistiques véhicules
   const { data: vehicleStats } = useQuery({
     queryKey: ["fleet-vehicle-stats-home"],
@@ -254,14 +259,24 @@ export function FleetHome({ onNavigate }: FleetHomeProps) {
         {/* Réception - Carte principale avec sous-cartes */}
         <Card className="glass border-amber-500/30 col-span-1 md:col-span-2 lg:col-span-2">
           <CardHeader className="pb-3">
-            <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-amber-500/20">
-                <ClipboardCheck className="h-5 w-5 text-amber-500" />
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="p-2 rounded-lg bg-amber-500/20">
+                  <ClipboardCheck className="h-5 w-5 text-amber-500" />
+                </div>
+                <div>
+                  <CardTitle className="text-lg">Réception</CardTitle>
+                  <CardDescription>Véhicules en attente par service</CardDescription>
+                </div>
               </div>
-              <div>
-                <CardTitle className="text-lg">Réception</CardTitle>
-                <CardDescription>Véhicules en attente par service</CardDescription>
-              </div>
+              <Button 
+                size="sm"
+                className="bg-amber-500 hover:bg-amber-600 text-white gap-1"
+                onClick={() => setShowIntakeWizard(true)}
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">Nouvelle Réception</span>
+              </Button>
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -467,6 +482,12 @@ export function FleetHome({ onNavigate }: FleetHomeProps) {
           </CardContent>
         </Card>
       </div>
+
+      {/* Wizard de nouvelle réception */}
+      <GarageIntakeWizard 
+        open={showIntakeWizard} 
+        onOpenChange={setShowIntakeWizard} 
+      />
     </div>
   );
 }
