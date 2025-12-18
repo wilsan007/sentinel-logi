@@ -1621,45 +1621,72 @@ export type Database = {
       }
       vehicle_fuel_logs: {
         Row: {
+          alerte_km: boolean | null
           conducteur_id: string | null
           cout_total: number
           created_at: string
           date_plein: string
+          date_validation: string | null
           enregistre_par: string | null
           id: string
+          justification: string | null
           kilometrage: number
+          km_parcourus: number | null
           litres: number
+          location_id: string | null
+          mission_description: string | null
           plein_complet: boolean | null
           prix_litre: number
           station: string | null
+          statut_validation: string | null
+          type_ravitaillement: string | null
+          valide_par: string | null
           vehicle_id: string
         }
         Insert: {
+          alerte_km?: boolean | null
           conducteur_id?: string | null
           cout_total: number
           created_at?: string
           date_plein?: string
+          date_validation?: string | null
           enregistre_par?: string | null
           id?: string
+          justification?: string | null
           kilometrage: number
+          km_parcourus?: number | null
           litres: number
+          location_id?: string | null
+          mission_description?: string | null
           plein_complet?: boolean | null
           prix_litre: number
           station?: string | null
+          statut_validation?: string | null
+          type_ravitaillement?: string | null
+          valide_par?: string | null
           vehicle_id: string
         }
         Update: {
+          alerte_km?: boolean | null
           conducteur_id?: string | null
           cout_total?: number
           created_at?: string
           date_plein?: string
+          date_validation?: string | null
           enregistre_par?: string | null
           id?: string
+          justification?: string | null
           kilometrage?: number
+          km_parcourus?: number | null
           litres?: number
+          location_id?: string | null
+          mission_description?: string | null
           plein_complet?: boolean | null
           prix_litre?: number
           station?: string | null
+          statut_validation?: string | null
+          type_ravitaillement?: string | null
+          valide_par?: string | null
           vehicle_id?: string
         }
         Relationships: [
@@ -1669,6 +1696,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "personnel"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_fuel_logs_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_fuel_logs_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "view_camp_consumption_rate"
+            referencedColumns: ["location_id"]
           },
           {
             foreignKeyName: "vehicle_fuel_logs_vehicle_id_fkey"
