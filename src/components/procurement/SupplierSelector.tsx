@@ -84,8 +84,10 @@ export const SupplierSelector = ({ selectedSupplierId, onSupplierSelect, readOnl
   }, []);
 
   const loadSuppliers = async () => {
+    // Use secure view that excludes sensitive contact info (email, phone, notes)
+    // This view is accessible to both admin_central and chef_camp users
     const { data, error } = await supabase
-      .from("suppliers")
+      .from("view_suppliers_limited")
       .select("*")
       .eq("is_active", true)
       .order("name");
