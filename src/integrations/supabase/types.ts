@@ -847,6 +847,13 @@ export type Database = {
             referencedRelation: "view_supplier_performance"
             referencedColumns: ["supplier_id"]
           },
+          {
+            foreignKeyName: "procurement_orders_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "view_suppliers_limited"
+            referencedColumns: ["id"]
+          },
         ]
       }
       procurement_quotes: {
@@ -913,6 +920,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "view_supplier_performance"
             referencedColumns: ["supplier_id"]
+          },
+          {
+            foreignKeyName: "procurement_quotes_supplier_id_fkey"
+            columns: ["supplier_id"]
+            isOneToOne: false
+            referencedRelation: "view_suppliers_limited"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1053,6 +1067,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_audit_log: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          metadata: Json | null
+          record_id: string | null
+          table_name: string
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_id?: string | null
+        }
+        Relationships: []
       }
       spare_parts: {
         Row: {
@@ -2225,6 +2272,51 @@ export type Database = {
         }
         Relationships: []
       }
+      view_suppliers_limited: {
+        Row: {
+          avg_delivery_days: number | null
+          code: string | null
+          country: string | null
+          created_at: string | null
+          id: string | null
+          is_active: boolean | null
+          name: string | null
+          on_time_delivery_rate: number | null
+          payment_terms: string | null
+          rating: Database["public"]["Enums"]["supplier_rating"] | null
+          total_orders_completed: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          avg_delivery_days?: number | null
+          code?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          on_time_delivery_rate?: number | null
+          payment_terms?: string | null
+          rating?: Database["public"]["Enums"]["supplier_rating"] | null
+          total_orders_completed?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          avg_delivery_days?: number | null
+          code?: string | null
+          country?: string | null
+          created_at?: string | null
+          id?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          on_time_delivery_rate?: number | null
+          payment_terms?: string | null
+          rating?: Database["public"]["Enums"]["supplier_rating"] | null
+          total_orders_completed?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       assign_test_user_roles: { Args: never; Returns: undefined }
@@ -2289,6 +2381,23 @@ export type Database = {
           supplier_name: string
           total_order_value: number
           total_orders: number
+        }[]
+      }
+      get_suppliers_for_camp: {
+        Args: never
+        Returns: {
+          avg_delivery_days: number
+          code: string
+          country: string
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          on_time_delivery_rate: number
+          payment_terms: string
+          rating: Database["public"]["Enums"]["supplier_rating"]
+          total_orders_completed: number
+          updated_at: string
         }[]
       }
       get_user_location: { Args: { _user_id: string }; Returns: string }
