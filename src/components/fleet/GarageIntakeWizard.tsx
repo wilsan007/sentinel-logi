@@ -116,19 +116,35 @@ export function GarageIntakeWizard({ open, onOpenChange }: GarageIntakeWizardPro
     enabled: !!vehicleId,
   });
 
-  // Get all personnel for driver selection
-  const { data: allPersonnel } = useQuery({
-    queryKey: ["personnel-all"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("personnel")
-        .select("id, nom, prenom")
-        .eq("actif", true)
-        .order("nom");
-      if (error) throw error;
-      return data;
-    },
-  });
+  // Build list of authorized drivers (principal + authorized)
+  const authorizedDriversList = (() => {
+    const drivers: { id: string; nom: string; prenom: string; isPrincipal?: boolean }[] = [];
+    
+    // Add principal driver if exists
+    if (vehicleData?.conducteur_principal_id && (vehicleData as any).conducteur) {
+      drivers.push({
+        id: (vehicleData as any).conducteur.id,
+        nom: (vehicleData as any).conducteur.nom,
+        prenom: (vehicleData as any).conducteur.prenom,
+        isPrincipal: true,
+      });
+    }
+    
+    // Add authorized drivers (excluding principal to avoid duplicates)
+    if (authorizedDrivers) {
+      authorizedDrivers.forEach((d: any) => {
+        if (d.personnel && d.personnel_id !== vehicleData?.conducteur_principal_id) {
+          drivers.push({
+            id: d.personnel.id,
+            nom: d.personnel.nom,
+            prenom: d.personnel.prenom,
+          });
+        }
+      });
+    }
+    
+    return drivers;
+  })();
 
   // Check if selected driver is authorized
   useEffect(() => {
@@ -360,11 +376,16 @@ export function GarageIntakeWizard({ open, onOpenChange }: GarageIntakeWizardPro
                     <SelectValue placeholder="Sélectionner le conducteur" />
                   </SelectTrigger>
                   <SelectContent>
-                    {allPersonnel?.map((p) => (
+                    {authorizedDriversList.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
-                        {p.prenom} {p.nom}
+                        {p.prenom} {p.nom} {p.isPrincipal && <Badge variant="outline" className="ml-2 text-xs">Principal</Badge>}
                       </SelectItem>
                     ))}
+                    {authorizedDriversList.length === 0 && (
+                      <div className="p-2 text-sm text-muted-foreground text-center">
+                        Aucun conducteur autorisé
+                      </div>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
