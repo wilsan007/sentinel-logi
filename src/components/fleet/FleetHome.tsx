@@ -78,19 +78,33 @@ export function FleetHome({ onNavigate }: FleetHomeProps) {
         MAINTENANCE: [],
         REPARATION_LEGERE: [],
         REPARATION_LOURDE: [],
+        CARBURANT: [],
+        INCIDENT: [],
+        EXPERTISE: [],
       };
       
       data.forEach(intake => {
         const service = intake.service_oriente || "MAINTENANCE";
         if (byService[service]) {
           byService[service].push(intake);
-        } else if (service === "REPARATION_LEGERE" || service === "REPARATION_LOURDE") {
-          if (!byService[service]) byService[service] = [];
-          byService[service].push(intake);
+        } else {
+          // Service non reconnu, l'ajouter à MAINTENANCE par défaut
+          byService.MAINTENANCE.push(intake);
         }
       });
+
+      // Calculer les totaux pour les catégories principales
+      const maintenanceCount = byService.MAINTENANCE.length;
+      const reparationsCount = byService.REPARATION_LEGERE.length + byService.REPARATION_LOURDE.length;
+      const autresCount = byService.CARBURANT.length + byService.INCIDENT.length + byService.EXPERTISE.length;
       
-      return { byService, total: data.length };
+      return { 
+        byService, 
+        total: data.length,
+        maintenanceCount,
+        reparationsCount,
+        autresCount
+      };
     },
   });
 
@@ -335,24 +349,33 @@ export function FleetHome({ onNavigate }: FleetHomeProps) {
                 </CardContent>
               </Card>
 
-              {/* Pièces */}
+              {/* Autres services (Carburant, Incident, Expertise) */}
               <Card 
-                className="bg-purple-500/10 border-purple-500/30 hover:border-purple-500/60 cursor-pointer transition-all"
-                onClick={() => onNavigate("parts")}
+                className="bg-green-500/10 border-green-500/30 hover:border-green-500/60 cursor-pointer transition-all"
+                onClick={() => onNavigate("intake")}
               >
                 <CardContent className="p-3">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Package className="h-4 w-4 text-purple-500" />
-                      <span className="font-medium text-sm">Pièces</span>
+                      <Fuel className="h-4 w-4 text-green-500" />
+                      <span className="font-medium text-sm">Autres</span>
                     </div>
-                    <Badge className={partsStats?.lowStock ? "bg-red-500" : "bg-purple-500"}>
-                      {partsStats?.lowStock || 0} alerte
+                    <Badge className="bg-green-500">
+                      {pendingByService?.autresCount || 0}
                     </Badge>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {partsStats?.totalParts || 0} références en stock
-                  </div>
+                  {[...(pendingByService?.byService?.CARBURANT || []), 
+                    ...(pendingByService?.byService?.INCIDENT || []),
+                    ...(pendingByService?.byService?.EXPERTISE || [])].slice(0, 2).map((intake: any) => (
+                    <div key={intake.id} className="text-xs text-muted-foreground truncate">
+                      {intake.vehicle?.immatriculation} - {intake.vehicle?.marque}
+                    </div>
+                  ))}
+                  {(pendingByService?.autresCount || 0) === 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      Carburant, Incident, Expertise
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </div>
