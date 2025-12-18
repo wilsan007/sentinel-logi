@@ -17,8 +17,12 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 
 type Vehicle = Database["public"]["Tables"]["vehicles"]["Row"];
 
+const immatriculationRegex = /^\d{4}A$/;
+
 const vehicleSchema = z.object({
-  immatriculation: z.string().min(1, "Immatriculation requise"),
+  immatriculation: z.string()
+    .min(1, "Immatriculation requise")
+    .regex(immatriculationRegex, "Format requis: 4 chiffres + A (ex: 1234A)"),
   location_id: z.string().min(1, "Département requis"),
   vehicle_type: z.enum(["VOITURE", "CAMION", "MOTO", "BUS", "UTILITAIRE", "ENGIN_SPECIAL"]),
   marque: z.string().min(1, "Marque requise"),
@@ -213,7 +217,13 @@ export function VehicleFormDialog({ open, onOpenChange, vehicle }: VehicleFormDi
                   <FormItem>
                     <FormLabel>Immatriculation *</FormLabel>
                     <FormControl>
-                      <Input placeholder="DJ-1234-A" {...field} className="font-mono" />
+                      <Input 
+                        placeholder="1234A" 
+                        {...field} 
+                        className="font-mono uppercase"
+                        maxLength={5}
+                        onChange={(e) => field.onChange(e.target.value.toUpperCase())}
+                      />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
