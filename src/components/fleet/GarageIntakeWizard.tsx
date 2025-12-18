@@ -291,10 +291,11 @@ export function GarageIntakeWizard({ open, onOpenChange }: GarageIntakeWizardPro
                 </Label>
                 <div className="flex gap-2">
                   <Input
-                    placeholder="DJ-1234-A"
+                    placeholder="1234A"
                     value={immatriculation}
-                    onChange={(e) => setImmatriculation(e.target.value.toUpperCase())}
-                    className="font-mono text-lg"
+                    onChange={(e) => setImmatriculation(e.target.value.toUpperCase().replace(/[^0-9A]/g, '').slice(0, 5))}
+                    className="font-mono text-lg uppercase"
+                    maxLength={5}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearchVehicle()}
                   />
                   <Button onClick={handleSearchVehicle} disabled={searchingVehicle}>
