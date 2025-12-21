@@ -1487,6 +1487,78 @@ export type Database = {
           },
         ]
       }
+      vehicle_body_damages: {
+        Row: {
+          created_at: string
+          damage_type: string
+          id: string
+          intake_id: string | null
+          is_pre_existing: boolean | null
+          is_repaired: boolean | null
+          notes: string | null
+          position_x: number
+          position_y: number
+          recorded_at: string
+          recorded_by: string | null
+          repaired_at: string | null
+          severity: string
+          updated_at: string
+          vehicle_id: string
+          vehicle_view: string
+        }
+        Insert: {
+          created_at?: string
+          damage_type: string
+          id?: string
+          intake_id?: string | null
+          is_pre_existing?: boolean | null
+          is_repaired?: boolean | null
+          notes?: string | null
+          position_x: number
+          position_y: number
+          recorded_at?: string
+          recorded_by?: string | null
+          repaired_at?: string | null
+          severity?: string
+          updated_at?: string
+          vehicle_id: string
+          vehicle_view: string
+        }
+        Update: {
+          created_at?: string
+          damage_type?: string
+          id?: string
+          intake_id?: string | null
+          is_pre_existing?: boolean | null
+          is_repaired?: boolean | null
+          notes?: string | null
+          position_x?: number
+          position_y?: number
+          recorded_at?: string
+          recorded_by?: string | null
+          repaired_at?: string | null
+          severity?: string
+          updated_at?: string
+          vehicle_id?: string
+          vehicle_view?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_body_damages_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_garage_intakes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_body_damages_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_diagnostic_items: {
         Row: {
           created_at: string
@@ -1666,6 +1738,100 @@ export type Database = {
           },
         ]
       }
+      vehicle_exits: {
+        Row: {
+          conducteur_id: string | null
+          cout_main_oeuvre: number | null
+          cout_pieces: number | null
+          cout_total: number | null
+          created_at: string
+          date_sortie: string
+          etat_general: string | null
+          id: string
+          intake_id: string
+          kilometrage_sortie: number
+          notes: string | null
+          observations_sortie: string | null
+          pieces_remplacees: string[] | null
+          remis_par: string | null
+          signature_conducteur: string | null
+          signature_responsable: string | null
+          travaux_effectues: string | null
+          updated_at: string
+          validated_at: string | null
+          valide_par: string | null
+          vehicle_id: string
+        }
+        Insert: {
+          conducteur_id?: string | null
+          cout_main_oeuvre?: number | null
+          cout_pieces?: number | null
+          cout_total?: number | null
+          created_at?: string
+          date_sortie?: string
+          etat_general?: string | null
+          id?: string
+          intake_id: string
+          kilometrage_sortie: number
+          notes?: string | null
+          observations_sortie?: string | null
+          pieces_remplacees?: string[] | null
+          remis_par?: string | null
+          signature_conducteur?: string | null
+          signature_responsable?: string | null
+          travaux_effectues?: string | null
+          updated_at?: string
+          validated_at?: string | null
+          valide_par?: string | null
+          vehicle_id: string
+        }
+        Update: {
+          conducteur_id?: string | null
+          cout_main_oeuvre?: number | null
+          cout_pieces?: number | null
+          cout_total?: number | null
+          created_at?: string
+          date_sortie?: string
+          etat_general?: string | null
+          id?: string
+          intake_id?: string
+          kilometrage_sortie?: number
+          notes?: string | null
+          observations_sortie?: string | null
+          pieces_remplacees?: string[] | null
+          remis_par?: string | null
+          signature_conducteur?: string | null
+          signature_responsable?: string | null
+          travaux_effectues?: string | null
+          updated_at?: string
+          validated_at?: string | null
+          valide_par?: string | null
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_exits_conducteur_id_fkey"
+            columns: ["conducteur_id"]
+            isOneToOne: false
+            referencedRelation: "personnel"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_exits_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_garage_intakes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_exits_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vehicle_fuel_logs: {
         Row: {
           alerte_km: boolean | null
@@ -1776,11 +1942,14 @@ export type Database = {
           enregistre_par: string | null
           id: string
           impressions_conducteur: string | null
+          inspection_complete: boolean | null
           is_authorized_driver: boolean
           kilometrage_arrivee: number
           motif: string
           motif_precision: string | null
           service_oriente: string | null
+          signature_conducteur: string | null
+          signature_receptionniste: string | null
           statut: string
           updated_at: string
           vehicle_id: string
@@ -1793,11 +1962,14 @@ export type Database = {
           enregistre_par?: string | null
           id?: string
           impressions_conducteur?: string | null
+          inspection_complete?: boolean | null
           is_authorized_driver?: boolean
           kilometrage_arrivee: number
           motif: string
           motif_precision?: string | null
           service_oriente?: string | null
+          signature_conducteur?: string | null
+          signature_receptionniste?: string | null
           statut?: string
           updated_at?: string
           vehicle_id: string
@@ -1810,11 +1982,14 @@ export type Database = {
           enregistre_par?: string | null
           id?: string
           impressions_conducteur?: string | null
+          inspection_complete?: boolean | null
           is_authorized_driver?: boolean
           kilometrage_arrivee?: number
           motif?: string
           motif_precision?: string | null
           service_oriente?: string | null
+          signature_conducteur?: string | null
+          signature_receptionniste?: string | null
           statut?: string
           updated_at?: string
           vehicle_id?: string
@@ -1928,6 +2103,54 @@ export type Database = {
           },
           {
             foreignKeyName: "vehicle_incidents_vehicle_id_fkey"
+            columns: ["vehicle_id"]
+            isOneToOne: false
+            referencedRelation: "vehicles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      vehicle_inspection_items: {
+        Row: {
+          category: string
+          created_at: string
+          id: string
+          intake_id: string
+          item_name: string
+          notes: string | null
+          status: string
+          vehicle_id: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          id?: string
+          intake_id: string
+          item_name: string
+          notes?: string | null
+          status: string
+          vehicle_id: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          id?: string
+          intake_id?: string
+          item_name?: string
+          notes?: string | null
+          status?: string
+          vehicle_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vehicle_inspection_items_intake_id_fkey"
+            columns: ["intake_id"]
+            isOneToOne: false
+            referencedRelation: "vehicle_garage_intakes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "vehicle_inspection_items_vehicle_id_fkey"
             columns: ["vehicle_id"]
             isOneToOne: false
             referencedRelation: "vehicles"
