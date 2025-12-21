@@ -293,14 +293,60 @@ export function DiagnosticValidationDialog({
 
         <ScrollArea className="flex-1 pr-4">
           <div className="space-y-6">
-            {/* Résumé du diagnostic */}
-            <div className="glass rounded-lg p-4">
-              <Label className="text-sm font-medium mb-2 block">Résumé du diagnostic</Label>
-              <p className="text-sm">{diagnostic?.diagnostic_resume || "Aucun résumé"}</p>
+            {/* Comparaison problème signalé vs diagnostiqué */}
+            <div className="glass rounded-lg p-4 space-y-4">
+              <Label className="text-sm font-medium block">Analyse du diagnostic</Label>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                    <AlertTriangle className="h-3 w-3 text-orange-500" />
+                    Problème signalé
+                  </Label>
+                  <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md text-sm">
+                    {diagnostic?.intake?.motif || "Non spécifié"}
+                    {diagnostic?.intake?.motif_precision && (
+                      <div className="text-muted-foreground mt-1 text-xs">
+                        {diagnostic.intake.motif_precision}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block flex items-center gap-1">
+                    <CheckCircle className="h-3 w-3 text-green-500" />
+                    Diagnostic réel
+                  </Label>
+                  <div className="p-3 bg-green-500/10 border border-green-500/30 rounded-md text-sm">
+                    {diagnostic?.diagnostic_resume || "Non spécifié"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Indicateur de confirmation */}
+              {diagnostic?.impressions_conducteur_validees !== undefined && (
+                <div className={`p-2 rounded-md flex items-center gap-2 ${
+                  diagnostic.impressions_conducteur_validees 
+                    ? "bg-green-500/10 text-green-600" 
+                    : "bg-orange-500/10 text-orange-600"
+                }`}>
+                  {diagnostic.impressions_conducteur_validees ? (
+                    <>
+                      <CheckCircle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Le diagnostic confirme le problème signalé</span>
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="h-4 w-4" />
+                      <span className="text-sm font-medium">Le problème réel diffère du signalement</span>
+                    </>
+                  )}
+                </div>
+              )}
               
               {diagnostic?.items?.length > 0 && (
-                <div className="mt-3">
-                  <Label className="text-sm font-medium mb-2 block">
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-2 block">
                     Problèmes identifiés ({diagnostic.items.length})
                   </Label>
                   <div className="flex flex-wrap gap-2">
@@ -319,6 +365,16 @@ export function DiagnosticValidationDialog({
                         {item.option?.nom || "Item"} - {item.severite}
                       </Badge>
                     ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes du mécanicien */}
+              {diagnostic?.notes_mecanicien && (
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">Notes du mécanicien</Label>
+                  <div className="p-2 bg-muted/50 rounded-md text-sm">
+                    {diagnostic.notes_mecanicien}
                   </div>
                 </div>
               )}

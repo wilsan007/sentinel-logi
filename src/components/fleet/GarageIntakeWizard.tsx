@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Search, Car, User, Gauge, AlertTriangle, Wrench, 
-  Fuel, FileText, CheckCircle, ArrowRight, ArrowLeft,
+  FileText, CheckCircle, ArrowRight, ArrowLeft,
   AlertCircle, Shield, Clock
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -22,27 +22,22 @@ interface GarageIntakeWizardProps {
   onOpenChange: (open: boolean) => void;
 }
 
-type MotifType = 'REVISION' | 'PANNE' | 'ACCIDENT_INTERNE' | 'ACCIDENT_EXTERNE' | 'CONTROLE_TECHNIQUE' | 'REPARATION' | 'RAVITAILLEMENT' | 'AUTRE';
-type ServiceType = 'MAINTENANCE' | 'REPARATION_LEGERE' | 'REPARATION_LOURDE' | 'CARBURANT' | 'INCIDENT' | 'EXPERTISE';
+type MotifType = 'REVISION' | 'PANNE' | 'ACCIDENT_INTERNE' | 'ACCIDENT_EXTERNE' | 'CONTROLE_TECHNIQUE' | 'REPARATION' | 'AUTRE';
+type ServiceType = 'ENTRETIEN' | 'REPARATION';
 
-const MOTIF_OPTIONS: { value: MotifType; label: string; icon: React.ReactNode; description: string }[] = [
-  { value: 'REVISION', label: 'Révision', icon: <Wrench className="h-5 w-5" />, description: 'Entretien périodique planifié' },
-  { value: 'PANNE', label: 'Panne', icon: <AlertTriangle className="h-5 w-5" />, description: 'Dysfonctionnement mécanique ou électrique' },
-  { value: 'ACCIDENT_INTERNE', label: 'Accident interne', icon: <AlertCircle className="h-5 w-5" />, description: 'Accident survenu dans l\'enceinte' },
-  { value: 'ACCIDENT_EXTERNE', label: 'Accident externe', icon: <AlertCircle className="h-5 w-5" />, description: 'Accident survenu à l\'extérieur' },
-  { value: 'CONTROLE_TECHNIQUE', label: 'Contrôle technique', icon: <Shield className="h-5 w-5" />, description: 'Inspection réglementaire' },
-  { value: 'REPARATION', label: 'Réparation', icon: <Wrench className="h-5 w-5" />, description: 'Réparation suite à un diagnostic' },
-  { value: 'RAVITAILLEMENT', label: 'Ravitaillement', icon: <Fuel className="h-5 w-5" />, description: 'Plein de carburant' },
-  { value: 'AUTRE', label: 'Autre', icon: <FileText className="h-5 w-5" />, description: 'Autre motif à préciser' },
+const MOTIF_OPTIONS: { value: MotifType; label: string; icon: React.ReactNode; description: string; serviceOriente: ServiceType }[] = [
+  { value: 'REVISION', label: 'Révision', icon: <Wrench className="h-5 w-5" />, description: 'Entretien périodique planifié', serviceOriente: 'ENTRETIEN' },
+  { value: 'CONTROLE_TECHNIQUE', label: 'Contrôle technique', icon: <Shield className="h-5 w-5" />, description: 'Inspection réglementaire', serviceOriente: 'ENTRETIEN' },
+  { value: 'PANNE', label: 'Panne', icon: <AlertTriangle className="h-5 w-5" />, description: 'Dysfonctionnement mécanique ou électrique', serviceOriente: 'REPARATION' },
+  { value: 'ACCIDENT_INTERNE', label: 'Accident interne', icon: <AlertCircle className="h-5 w-5" />, description: 'Accident survenu dans l\'enceinte', serviceOriente: 'REPARATION' },
+  { value: 'ACCIDENT_EXTERNE', label: 'Accident externe', icon: <AlertCircle className="h-5 w-5" />, description: 'Accident survenu à l\'extérieur', serviceOriente: 'REPARATION' },
+  { value: 'REPARATION', label: 'Réparation', icon: <Wrench className="h-5 w-5" />, description: 'Réparation suite à un diagnostic', serviceOriente: 'REPARATION' },
+  { value: 'AUTRE', label: 'Autre', icon: <FileText className="h-5 w-5" />, description: 'Autre motif à préciser', serviceOriente: 'REPARATION' },
 ];
 
-const SERVICE_OPTIONS: { value: ServiceType; label: string; description: string }[] = [
-  { value: 'MAINTENANCE', label: 'Service Maintenance', description: 'Entretiens et révisions' },
-  { value: 'REPARATION_LEGERE', label: 'Réparation légère', description: 'Petites réparations rapides' },
-  { value: 'REPARATION_LOURDE', label: 'Réparation lourde', description: 'Réparations importantes' },
-  { value: 'CARBURANT', label: 'Station carburant', description: 'Ravitaillement en carburant' },
-  { value: 'INCIDENT', label: 'Déclaration incident', description: 'Traitement des accidents' },
-  { value: 'EXPERTISE', label: 'Expertise', description: 'Évaluation technique approfondie' },
+const SERVICE_OPTIONS: { value: ServiceType; label: string; description: string; color: string }[] = [
+  { value: 'ENTRETIEN', label: 'Service Entretien', description: 'Révisions et entretiens préventifs', color: 'border-blue-500 bg-blue-500/10' },
+  { value: 'REPARATION', label: 'Service Réparation', description: 'Diagnostic et réparation des pannes', color: 'border-orange-500 bg-orange-500/10' },
 ];
 
 export function GarageIntakeWizard({ open, onOpenChange }: GarageIntakeWizardProps) {
@@ -160,26 +155,9 @@ export function GarageIntakeWizard({ open, onOpenChange }: GarageIntakeWizardPro
   // Auto-suggest service based on motif
   useEffect(() => {
     if (motif) {
-      switch (motif) {
-        case 'REVISION':
-        case 'CONTROLE_TECHNIQUE':
-          setServiceOriente('MAINTENANCE');
-          break;
-        case 'PANNE':
-          setServiceOriente('EXPERTISE');
-          break;
-        case 'ACCIDENT_INTERNE':
-        case 'ACCIDENT_EXTERNE':
-          setServiceOriente('INCIDENT');
-          break;
-        case 'REPARATION':
-          setServiceOriente('REPARATION_LEGERE');
-          break;
-        case 'RAVITAILLEMENT':
-          setServiceOriente('CARBURANT');
-          break;
-        default:
-          setServiceOriente(null);
+      const motifOption = MOTIF_OPTIONS.find(m => m.value === motif);
+      if (motifOption) {
+        setServiceOriente(motifOption.serviceOriente);
       }
     }
   }, [motif]);
@@ -217,14 +195,13 @@ export function GarageIntakeWizard({ open, onOpenChange }: GarageIntakeWizardPro
       
       if (intakeError) throw intakeError;
 
-      // Update vehicle mileage
+      // Update vehicle mileage and status
+      const newStatus = serviceOriente === 'REPARATION' ? 'EN_REPARATION' : 'EN_MAINTENANCE';
       const { error: vehicleError } = await supabase
         .from("vehicles")
         .update({ 
           kilometrage_actuel: parseInt(kilometrage),
-          status: motif === 'RAVITAILLEMENT' ? 'OPERATIONNEL' : 
-                  motif === 'ACCIDENT_INTERNE' || motif === 'ACCIDENT_EXTERNE' ? 'EN_REPARATION' :
-                  'EN_MAINTENANCE'
+          status: newStatus
         })
         .eq("id", vehicleId);
       
@@ -548,20 +525,20 @@ export function GarageIntakeWizard({ open, onOpenChange }: GarageIntakeWizardPro
               className="space-y-4"
             >
               <Label>Orienter vers le service</Label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {SERVICE_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     type="button"
                     onClick={() => setServiceOriente(option.value)}
-                    className={`p-3 rounded-lg border text-left transition-all ${
+                    className={`p-4 rounded-lg border-2 text-left transition-all ${
                       serviceOriente === option.value
-                        ? 'border-amber-500 bg-amber-500/10'
+                        ? option.color
                         : 'border-border hover:border-amber-500/50'
                     }`}
                   >
-                    <div className="font-medium">{option.label}</div>
-                    <p className="text-xs text-muted-foreground mt-1">{option.description}</p>
+                    <div className="font-medium text-lg">{option.label}</div>
+                    <p className="text-sm text-muted-foreground mt-1">{option.description}</p>
                   </button>
                 ))}
               </div>
