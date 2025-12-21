@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Car, Loader2, CheckCircle, Clock, AlertTriangle, Stethoscope, ClipboardCheck } from "lucide-react";
+import { Plus, Search, Car, Loader2, CheckCircle, Clock, AlertTriangle, Stethoscope, ClipboardCheck, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { GarageIntakeWizard } from "./GarageIntakeWizard";
 import { DiagnosticDialog } from "./DiagnosticDialog";
 import { DiagnosticValidationDialog } from "./DiagnosticValidationDialog";
+import { DiagnosticReportSheet } from "./DiagnosticReportSheet";
 
 const MOTIF_LABELS: Record<string, { label: string; color: string }> = {
   REVISION: { label: "Révision", color: "bg-blue-500/20 text-blue-500" },
@@ -46,6 +47,8 @@ export function GarageIntakesList() {
   const [showDiagnostic, setShowDiagnostic] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   const [selectedDiagnostic, setSelectedDiagnostic] = useState<any>(null);
+  const [showReportSheet, setShowReportSheet] = useState(false);
+  const [selectedDiagnosticId, setSelectedDiagnosticId] = useState<string>("");
   const { data: intakes, isLoading } = useQuery({
     queryKey: ["garage-intakes"],
     queryFn: async () => {
@@ -64,9 +67,9 @@ export function GarageIntakesList() {
     },
   });
 
-  // Fetch diagnostics for validation button
+  // Fetch diagnostics for validation and report buttons
   const { data: diagnostics } = useQuery({
-    queryKey: ["diagnostics-pending"],
+    queryKey: ["diagnostics-completed"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("vehicle_diagnostics")
@@ -75,8 +78,7 @@ export function GarageIntakesList() {
           intake:vehicle_garage_intakes(id, vehicle_id, kilometrage_arrivee),
           items:vehicle_diagnostic_items(id, option_id, severite, option:diagnostic_options(nom))
         `)
-        .eq("statut", "TERMINE")
-        .eq("validation_status", "EN_ATTENTE_VALIDATION");
+        .eq("statut", "TERMINE");
       if (error) throw error;
       return data;
     },
@@ -156,19 +158,36 @@ export function GarageIntakesList() {
                       Diagnostic
                     </Button>
                     {diagnostics?.find((d: any) => d.intake_id === intake.id) && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const diag = diagnostics.find((d: any) => d.intake_id === intake.id);
-                          setSelectedDiagnostic(diag);
-                          setShowValidation(true);
-                        }}
-                        className="gap-1 border-green-500 text-green-500 flex-1"
-                      >
-                        <ClipboardCheck className="h-3 w-3" />
-                        Valider
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            const diag = diagnostics.find((d: any) => d.intake_id === intake.id);
+                            setSelectedDiagnosticId(diag.id);
+                            setShowReportSheet(true);
+                          }}
+                          className="gap-1 border-amber-500 text-amber-500 flex-1"
+                        >
+                          <FileText className="h-3 w-3" />
+                          Fiche
+                        </Button>
+                        {diagnostics?.find((d: any) => d.intake_id === intake.id && d.validation_status === "EN_ATTENTE_VALIDATION") && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const diag = diagnostics.find((d: any) => d.intake_id === intake.id);
+                              setSelectedDiagnostic(diag);
+                              setShowValidation(true);
+                            }}
+                            className="gap-1 border-green-500 text-green-500 flex-1"
+                          >
+                            <ClipboardCheck className="h-3 w-3" />
+                            Valider
+                          </Button>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>
@@ -242,19 +261,36 @@ export function GarageIntakesList() {
                             <span className="hidden xl:inline">Diagnostic</span>
                           </Button>
                           {diagnostics?.find((d: any) => d.intake_id === intake.id) && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                const diag = diagnostics.find((d: any) => d.intake_id === intake.id);
-                                setSelectedDiagnostic(diag);
-                                setShowValidation(true);
-                              }}
-                              className="gap-1 border-green-500 text-green-500"
-                            >
-                              <ClipboardCheck className="h-3 w-3" />
-                              <span className="hidden xl:inline">Valider</span>
-                            </Button>
+                            <>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  const diag = diagnostics.find((d: any) => d.intake_id === intake.id);
+                                  setSelectedDiagnosticId(diag.id);
+                                  setShowReportSheet(true);
+                                }}
+                                className="gap-1 border-amber-500 text-amber-500"
+                              >
+                                <FileText className="h-3 w-3" />
+                                <span className="hidden xl:inline">Fiche</span>
+                              </Button>
+                              {diagnostics?.find((d: any) => d.intake_id === intake.id && d.validation_status === "EN_ATTENTE_VALIDATION") && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => {
+                                    const diag = diagnostics.find((d: any) => d.intake_id === intake.id);
+                                    setSelectedDiagnostic(diag);
+                                    setShowValidation(true);
+                                  }}
+                                  className="gap-1 border-green-500 text-green-500"
+                                >
+                                  <ClipboardCheck className="h-3 w-3" />
+                                  <span className="hidden xl:inline">Valider</span>
+                                </Button>
+                              )}
+                            </>
                           )}
                         </div>
                       </TableCell>
@@ -289,6 +325,12 @@ export function GarageIntakesList() {
           diagnostic={selectedDiagnostic}
         />
       )}
+
+      <DiagnosticReportSheet
+        open={showReportSheet}
+        onOpenChange={setShowReportSheet}
+        diagnosticId={selectedDiagnosticId}
+      />
     </Card>
   );
 }
