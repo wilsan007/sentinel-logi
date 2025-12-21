@@ -112,6 +112,8 @@ export function IntakeReportSheet({ open, onOpenChange, intakeId }: IntakeReport
   const [inspectionNotes, setInspectionNotes] = useState<Record<string, string>>({});
   const [conducteurSignature, setConducteurSignature] = useState<string | null>(null);
   const [receptionnisteSignature, setReceptionnisteSignature] = useState<string | null>(null);
+  const [showConducteurSignature, setShowConducteurSignature] = useState(false);
+  const [showReceptionnisteSignature, setShowReceptionnisteSignature] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Fetch intake data
@@ -206,11 +208,12 @@ export function IntakeReportSheet({ open, onOpenChange, intakeId }: IntakeReport
 
   const getVehicleType = (): VehicleSketchType => {
     const type = intake?.vehicle?.vehicle_type;
-    if (type === 'BERLINE') return 'BERLINE';
-    if (type === 'PICKUP') return 'PICKUP';
-    if (type === 'SUV' || type === '4X4') return 'SUV';
-    if (type === 'CAMION' || type === 'CAMIONNETTE') return 'CAMION';
-    if (type === 'BUS' || type === 'MINIBUS') return 'BUS';
+    if (type === 'VOITURE') return 'BERLINE';
+    if (type === 'UTILITAIRE') return 'PICKUP';
+    if (type === 'CAMION') return 'CAMION';
+    if (type === 'BUS') return 'BUS';
+    if (type === 'MOTO') return 'BERLINE'; // Fallback for moto
+    if (type === 'ENGIN_SPECIAL') return 'CAMION'; // Fallback for special
     return 'BERLINE';
   };
 
@@ -479,8 +482,8 @@ export function IntakeReportSheet({ open, onOpenChange, intakeId }: IntakeReport
             <CardContent>
               <VehicleSketchEditor
                 vehicleType={getVehicleType()}
-                damageMarkers={damageMarkers}
-                onMarkersChange={setDamageMarkers}
+                damages={damageMarkers}
+                onDamagesChange={setDamageMarkers}
                 readOnly={false}
               />
             </CardContent>
@@ -551,19 +554,33 @@ export function IntakeReportSheet({ open, onOpenChange, intakeId }: IntakeReport
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-medium mb-2">Signature du Conducteur</h4>
-                  <DigitalSignaturePad
-                    onSignatureChange={setConducteurSignature}
-                    existingSignature={conducteurSignature || undefined}
-                    label=""
-                  />
+                  {conducteurSignature ? (
+                    <div className="border rounded p-2 bg-white">
+                      <img src={conducteurSignature} alt="Signature conducteur" className="max-h-24" />
+                      <Button variant="ghost" size="sm" onClick={() => setConducteurSignature(null)} className="mt-2">
+                        Modifier
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" onClick={() => setShowConducteurSignature(true)}>
+                      Signer
+                    </Button>
+                  )}
                 </div>
                 <div>
                   <h4 className="font-medium mb-2">Signature du Réceptionniste</h4>
-                  <DigitalSignaturePad
-                    onSignatureChange={setReceptionnisteSignature}
-                    existingSignature={receptionnisteSignature || undefined}
-                    label=""
-                  />
+                  {receptionnisteSignature ? (
+                    <div className="border rounded p-2 bg-white">
+                      <img src={receptionnisteSignature} alt="Signature réceptionniste" className="max-h-24" />
+                      <Button variant="ghost" size="sm" onClick={() => setReceptionnisteSignature(null)} className="mt-2">
+                        Modifier
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" onClick={() => setShowReceptionnisteSignature(true)}>
+                      Signer
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -581,6 +598,22 @@ export function IntakeReportSheet({ open, onOpenChange, intakeId }: IntakeReport
             </Button>
           </div>
         </div>
+
+        {/* Signature Modals */}
+        {showConducteurSignature && (
+          <DigitalSignaturePad
+            onSave={(sig) => { setConducteurSignature(sig); setShowConducteurSignature(false); }}
+            onCancel={() => setShowConducteurSignature(false)}
+            title="Signature du Conducteur"
+          />
+        )}
+        {showReceptionnisteSignature && (
+          <DigitalSignaturePad
+            onSave={(sig) => { setReceptionnisteSignature(sig); setShowReceptionnisteSignature(false); }}
+            onCancel={() => setShowReceptionnisteSignature(false)}
+            title="Signature du Réceptionniste"
+          />
+        )}
       </SheetContent>
     </Sheet>
   );
