@@ -50,6 +50,8 @@ export function ExitReportSheet({ open, onOpenChange, intakeId }: ExitReportShee
   const [observationsSortie, setObservationsSortie] = useState("");
   const [conducteurSignature, setConducteurSignature] = useState<string | null>(null);
   const [responsableSignature, setResponsableSignature] = useState<string | null>(null);
+  const [showConducteurSignature, setShowConducteurSignature] = useState(false);
+  const [showResponsableSignature, setShowResponsableSignature] = useState(false);
   const [conducteurId, setConducteurId] = useState<string | null>(null);
   const [damageMarkers, setDamageMarkers] = useState<DamageMarker[]>([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -195,11 +197,12 @@ export function ExitReportSheet({ open, onOpenChange, intakeId }: ExitReportShee
 
   const getVehicleType = (): VehicleSketchType => {
     const type = intake?.vehicle?.vehicle_type;
-    if (type === 'BERLINE') return 'BERLINE';
-    if (type === 'PICKUP') return 'PICKUP';
-    if (type === 'SUV' || type === '4X4') return 'SUV';
-    if (type === 'CAMION' || type === 'CAMIONNETTE') return 'CAMION';
-    if (type === 'BUS' || type === 'MINIBUS') return 'BUS';
+    if (type === 'VOITURE') return 'BERLINE';
+    if (type === 'UTILITAIRE') return 'PICKUP';
+    if (type === 'CAMION') return 'CAMION';
+    if (type === 'BUS') return 'BUS';
+    if (type === 'MOTO') return 'BERLINE';
+    if (type === 'ENGIN_SPECIAL') return 'CAMION';
     return 'BERLINE';
   };
 
@@ -598,8 +601,8 @@ export function ExitReportSheet({ open, onOpenChange, intakeId }: ExitReportShee
             <CardContent>
               <VehicleSketchEditor
                 vehicleType={getVehicleType()}
-                damageMarkers={damageMarkers}
-                onMarkersChange={setDamageMarkers}
+                damages={damageMarkers}
+                onDamagesChange={setDamageMarkers}
                 readOnly={true}
               />
               <p className="text-xs text-muted-foreground mt-2">
@@ -617,19 +620,33 @@ export function ExitReportSheet({ open, onOpenChange, intakeId }: ExitReportShee
               <div className="grid md:grid-cols-2 gap-6">
                 <div>
                   <h4 className="font-medium mb-2">Signature du Conducteur</h4>
-                  <DigitalSignaturePad
-                    onSignatureChange={setConducteurSignature}
-                    existingSignature={conducteurSignature || undefined}
-                    label=""
-                  />
+                  {conducteurSignature ? (
+                    <div className="border rounded p-2 bg-white">
+                      <img src={conducteurSignature} alt="Signature conducteur" className="max-h-24" />
+                      <Button variant="ghost" size="sm" onClick={() => setConducteurSignature(null)} className="mt-2">
+                        Modifier
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" onClick={() => setShowConducteurSignature(true)}>
+                      Signer
+                    </Button>
+                  )}
                 </div>
                 <div>
                   <h4 className="font-medium mb-2">Signature du Responsable Garage</h4>
-                  <DigitalSignaturePad
-                    onSignatureChange={setResponsableSignature}
-                    existingSignature={responsableSignature || undefined}
-                    label=""
-                  />
+                  {responsableSignature ? (
+                    <div className="border rounded p-2 bg-white">
+                      <img src={responsableSignature} alt="Signature responsable" className="max-h-24" />
+                      <Button variant="ghost" size="sm" onClick={() => setResponsableSignature(null)} className="mt-2">
+                        Modifier
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" onClick={() => setShowResponsableSignature(true)}>
+                      Signer
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -651,6 +668,22 @@ export function ExitReportSheet({ open, onOpenChange, intakeId }: ExitReportShee
             </Button>
           </div>
         </div>
+
+        {/* Signature Modals */}
+        {showConducteurSignature && (
+          <DigitalSignaturePad
+            onSave={(sig) => { setConducteurSignature(sig); setShowConducteurSignature(false); }}
+            onCancel={() => setShowConducteurSignature(false)}
+            title="Signature du Conducteur"
+          />
+        )}
+        {showResponsableSignature && (
+          <DigitalSignaturePad
+            onSave={(sig) => { setResponsableSignature(sig); setShowResponsableSignature(false); }}
+            onCancel={() => setShowResponsableSignature(false)}
+            title="Signature du Responsable Garage"
+          />
+        )}
       </SheetContent>
     </Sheet>
   );
