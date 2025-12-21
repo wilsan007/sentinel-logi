@@ -299,27 +299,52 @@ export function DiagnosticDialog({ open, onOpenChange, intake }: DiagnosticDialo
             </div>
           </div>
 
-          {/* Impressions conducteur */}
-          {intake?.impressions_conducteur && (
-            <div className="glass rounded-lg p-4">
-              <div className="flex items-center justify-between mb-2">
-                <Label className="text-sm font-medium">Impressions du conducteur</Label>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="validate-impressions"
-                    checked={impressionsValidees}
-                    onCheckedChange={(checked) => setImpressionsValidees(!!checked)}
-                  />
-                  <Label htmlFor="validate-impressions" className="text-sm cursor-pointer">
-                    Validées par le mécanicien
-                  </Label>
+          {/* Motif et impressions conducteur */}
+          <div className="glass rounded-lg p-4 space-y-3">
+            <div className="flex items-center gap-2 mb-2">
+              <AlertTriangle className="h-4 w-4 text-orange-500" />
+              <Label className="text-sm font-medium">Problème signalé par le conducteur</Label>
+            </div>
+            
+            {/* Motif de l'arrivée */}
+            <div className="p-3 bg-orange-500/10 border border-orange-500/30 rounded-md">
+              <div className="text-sm font-medium text-orange-500">
+                Motif: {intake?.motif || "Non spécifié"}
+              </div>
+              {intake?.motif_precision && (
+                <div className="text-sm text-muted-foreground mt-1">
+                  Précision: {intake.motif_precision}
+                </div>
+              )}
+            </div>
+            
+            {/* Impressions du conducteur */}
+            {intake?.impressions_conducteur && (
+              <div>
+                <Label className="text-xs text-muted-foreground">Description du conducteur:</Label>
+                <div className="p-3 bg-muted/50 rounded-md text-sm mt-1">
+                  "{intake.impressions_conducteur}"
                 </div>
               </div>
-              <div className="p-3 bg-muted/50 rounded-md text-sm">
-                {intake.impressions_conducteur}
+            )}
+            
+            {/* Validation des impressions */}
+            <div className="flex items-center gap-3 p-3 rounded-md border border-dashed">
+              <Checkbox
+                id="validate-impressions"
+                checked={impressionsValidees}
+                onCheckedChange={(checked) => setImpressionsValidees(!!checked)}
+              />
+              <div>
+                <Label htmlFor="validate-impressions" className="text-sm cursor-pointer font-medium">
+                  Problème signalé confirmé par le diagnostic
+                </Label>
+                <p className="text-xs text-muted-foreground">
+                  Cochez si le diagnostic confirme les observations du conducteur
+                </p>
               </div>
             </div>
-          )}
+          </div>
 
           {/* Assignation mécanicien */}
           <div className="glass rounded-lg p-4">
@@ -427,26 +452,49 @@ export function DiagnosticDialog({ open, onOpenChange, intake }: DiagnosticDialo
             </ScrollArea>
           </div>
 
-          {/* Notes mécanicien */}
-          <div>
-            <Label>Notes du mécanicien</Label>
-            <Textarea
-              value={notesMecanicien}
-              onChange={(e) => setNotesMecanicien(e.target.value)}
-              placeholder="Observations additionnelles..."
-              className="mt-1"
-            />
-          </div>
+          {/* Analyse du mécanicien */}
+          <div className="glass rounded-lg p-4 space-y-4">
+            <Label className="flex items-center gap-2">
+              <Wrench className="h-4 w-4 text-amber-500" />
+              Analyse et conclusions
+            </Label>
+            
+            {/* Diagnostic réel vs signalé */}
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">
+                  Problème signalé
+                </Label>
+                <div className="p-2 bg-orange-500/10 border border-orange-500/30 rounded-md text-sm min-h-[60px]">
+                  {intake?.motif || "Non spécifié"}
+                  {intake?.motif_precision && ` - ${intake.motif_precision}`}
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs text-muted-foreground mb-1 block">
+                  Problème réel identifié
+                </Label>
+                <Textarea
+                  value={diagnosticResume}
+                  onChange={(e) => setDiagnosticResume(e.target.value)}
+                  placeholder="Décrivez le vrai problème identifié..."
+                  className="min-h-[60px] text-sm"
+                />
+              </div>
+            </div>
 
-          {/* Résumé diagnostic */}
-          <div>
-            <Label>Résumé du diagnostic</Label>
-            <Textarea
-              value={diagnosticResume}
-              onChange={(e) => setDiagnosticResume(e.target.value)}
-              placeholder="Conclusion et recommandations..."
-              className="mt-1"
-            />
+            {/* Notes du mécanicien */}
+            <div>
+              <Label className="text-xs text-muted-foreground mb-1 block">
+                Observations et recommandations du mécanicien
+              </Label>
+              <Textarea
+                value={notesMecanicien}
+                onChange={(e) => setNotesMecanicien(e.target.value)}
+                placeholder="Détails techniques, causes probables, actions recommandées..."
+                rows={3}
+              />
+            </div>
           </div>
         </div>
 

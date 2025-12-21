@@ -30,11 +30,12 @@ interface FleetHomeProps {
 }
 
 const SERVICE_LABELS: Record<string, string> = {
+  ENTRETIEN: "Entretiens",
+  REPARATION: "Réparations",
+  // Legacy values for backward compatibility
   MAINTENANCE: "Entretiens",
-  REPARATION_LEGERE: "Réparation légère",
-  REPARATION_LOURDE: "Réparation lourde",
-  CARBURANT: "Carburant",
-  INCIDENT: "Incident",
+  REPARATION_LEGERE: "Réparations",
+  REPARATION_LOURDE: "Réparations",
   EXPERTISE: "Expertise",
 };
 
@@ -75,35 +76,31 @@ export function FleetHome({ onNavigate }: FleetHomeProps) {
       if (error) throw error;
       
       const byService: Record<string, any[]> = {
-        MAINTENANCE: [],
-        REPARATION_LEGERE: [],
-        REPARATION_LOURDE: [],
-        CARBURANT: [],
-        INCIDENT: [],
-        EXPERTISE: [],
+        ENTRETIEN: [],
+        REPARATION: [],
       };
       
       data.forEach(intake => {
-        const service = intake.service_oriente || "MAINTENANCE";
-        if (byService[service]) {
-          byService[service].push(intake);
+        const service = intake.service_oriente || "ENTRETIEN";
+        // Map legacy values to new structure
+        if (service === 'MAINTENANCE' || service === 'ENTRETIEN') {
+          byService.ENTRETIEN.push(intake);
+        } else if (service === 'REPARATION_LEGERE' || service === 'REPARATION_LOURDE' || service === 'REPARATION' || service === 'EXPERTISE') {
+          byService.REPARATION.push(intake);
         } else {
-          // Service non reconnu, l'ajouter à MAINTENANCE par défaut
-          byService.MAINTENANCE.push(intake);
+          // Default to entretien for unknown services
+          byService.ENTRETIEN.push(intake);
         }
       });
 
-      // Calculer les totaux pour les catégories principales
-      const maintenanceCount = byService.MAINTENANCE.length;
-      const reparationsCount = byService.REPARATION_LEGERE.length + byService.REPARATION_LOURDE.length;
-      const autresCount = byService.CARBURANT.length + byService.INCIDENT.length + byService.EXPERTISE.length;
+      const entretienCount = byService.ENTRETIEN.length;
+      const reparationsCount = byService.REPARATION.length;
       
       return { 
         byService, 
         total: data.length,
-        maintenanceCount,
+        entretienCount,
         reparationsCount,
-        autresCount
       };
     },
   });
@@ -295,30 +292,31 @@ export function FleetHome({ onNavigate }: FleetHomeProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             {/* Sous-cartes services */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Entretiens */}
               <Card 
                 className="bg-blue-500/10 border-blue-500/30 hover:border-blue-500/60 cursor-pointer transition-all"
                 onClick={() => onNavigate("maintenance")}
               >
-                <CardContent className="p-3">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Settings className="h-4 w-4 text-blue-500" />
-                      <span className="font-medium text-sm">Entretiens</span>
+                      <Settings className="h-5 w-5 text-blue-500" />
+                      <span className="font-medium">Service Entretien</span>
                     </div>
                     <Badge className="bg-blue-500">
-                      {pendingByService?.byService?.MAINTENANCE?.length || 0}
+                      {pendingByService?.entretienCount || 0}
                     </Badge>
                   </div>
-                  {pendingByService?.byService?.MAINTENANCE?.slice(0, 2).map((intake: any) => (
+                  <p className="text-xs text-muted-foreground mb-2">Révisions et entretiens préventifs</p>
+                  {pendingByService?.byService?.ENTRETIEN?.slice(0, 2).map((intake: any) => (
                     <div key={intake.id} className="text-xs text-muted-foreground truncate">
                       {intake.vehicle?.immatriculation} - {intake.vehicle?.marque}
                     </div>
                   ))}
-                  {(pendingByService?.byService?.MAINTENANCE?.length || 0) > 2 && (
+                  {(pendingByService?.byService?.ENTRETIEN?.length || 0) > 2 && (
                     <div className="text-xs text-blue-500 mt-1">
-                      +{(pendingByService?.byService?.MAINTENANCE?.length || 0) - 2} autres
+                      +{(pendingByService?.byService?.ENTRETIEN?.length || 0) - 2} autres
                     </div>
                   )}
                 </CardContent>
@@ -329,51 +327,25 @@ export function FleetHome({ onNavigate }: FleetHomeProps) {
                 className="bg-orange-500/10 border-orange-500/30 hover:border-orange-500/60 cursor-pointer transition-all"
                 onClick={() => onNavigate("repairs")}
               >
-                <CardContent className="p-3">
+                <CardContent className="p-4">
                   <div className="flex items-center justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      <Wrench className="h-4 w-4 text-orange-500" />
-                      <span className="font-medium text-sm">Réparations</span>
+                      <Wrench className="h-5 w-5 text-orange-500" />
+                      <span className="font-medium">Service Réparation</span>
                     </div>
                     <Badge className="bg-orange-500">
-                      {(pendingByService?.byService?.REPARATION_LEGERE?.length || 0) + 
-                       (pendingByService?.byService?.REPARATION_LOURDE?.length || 0)}
+                      {pendingByService?.reparationsCount || 0}
                     </Badge>
                   </div>
-                  {[...(pendingByService?.byService?.REPARATION_LEGERE || []), 
-                    ...(pendingByService?.byService?.REPARATION_LOURDE || [])].slice(0, 2).map((intake: any) => (
+                  <p className="text-xs text-muted-foreground mb-2">Diagnostic et réparation des pannes</p>
+                  {pendingByService?.byService?.REPARATION?.slice(0, 2).map((intake: any) => (
                     <div key={intake.id} className="text-xs text-muted-foreground truncate">
                       {intake.vehicle?.immatriculation} - {intake.vehicle?.marque}
                     </div>
                   ))}
-                </CardContent>
-              </Card>
-
-              {/* Autres services (Carburant, Incident, Expertise) */}
-              <Card 
-                className="bg-green-500/10 border-green-500/30 hover:border-green-500/60 cursor-pointer transition-all"
-                onClick={() => onNavigate("intake")}
-              >
-                <CardContent className="p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-2">
-                      <Fuel className="h-4 w-4 text-green-500" />
-                      <span className="font-medium text-sm">Autres</span>
-                    </div>
-                    <Badge className="bg-green-500">
-                      {pendingByService?.autresCount || 0}
-                    </Badge>
-                  </div>
-                  {[...(pendingByService?.byService?.CARBURANT || []), 
-                    ...(pendingByService?.byService?.INCIDENT || []),
-                    ...(pendingByService?.byService?.EXPERTISE || [])].slice(0, 2).map((intake: any) => (
-                    <div key={intake.id} className="text-xs text-muted-foreground truncate">
-                      {intake.vehicle?.immatriculation} - {intake.vehicle?.marque}
-                    </div>
-                  ))}
-                  {(pendingByService?.autresCount || 0) === 0 && (
-                    <div className="text-xs text-muted-foreground">
-                      Carburant, Incident, Expertise
+                  {(pendingByService?.byService?.REPARATION?.length || 0) > 2 && (
+                    <div className="text-xs text-orange-500 mt-1">
+                      +{(pendingByService?.byService?.REPARATION?.length || 0) - 2} autres
                     </div>
                   )}
                 </CardContent>

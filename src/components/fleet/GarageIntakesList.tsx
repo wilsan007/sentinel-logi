@@ -20,7 +20,6 @@ const MOTIF_LABELS: Record<string, { label: string; color: string }> = {
   ACCIDENT_EXTERNE: { label: "Accident externe", color: "bg-red-500/20 text-red-500" },
   CONTROLE_TECHNIQUE: { label: "Contrôle technique", color: "bg-purple-500/20 text-purple-500" },
   REPARATION: { label: "Réparation", color: "bg-orange-500/20 text-orange-500" },
-  RAVITAILLEMENT: { label: "Ravitaillement", color: "bg-green-500/20 text-green-500" },
   AUTRE: { label: "Autre", color: "bg-gray-500/20 text-gray-500" },
 };
 
@@ -31,11 +30,12 @@ const STATUT_LABELS: Record<string, { label: string; icon: React.ReactNode; colo
 };
 
 const SERVICE_LABELS: Record<string, string> = {
-  MAINTENANCE: "Maintenance",
-  REPARATION_LEGERE: "Réparation légère",
-  REPARATION_LOURDE: "Réparation lourde",
-  CARBURANT: "Carburant",
-  INCIDENT: "Incident",
+  ENTRETIEN: "Service Entretien",
+  REPARATION: "Service Réparation",
+  // Legacy values for backward compatibility
+  MAINTENANCE: "Service Entretien",
+  REPARATION_LEGERE: "Service Réparation",
+  REPARATION_LOURDE: "Service Réparation",
   EXPERTISE: "Expertise",
 };
 
