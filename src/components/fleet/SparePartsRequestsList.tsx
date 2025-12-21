@@ -35,6 +35,7 @@ import {
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { SparePartsRequestDialog } from "./SparePartsRequestDialog";
+import { SparePartsOrderWizard } from "./SparePartsOrderWizard";
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: any }> = {
   en_attente: { label: "En attente", color: "bg-yellow-500/20 text-yellow-500", icon: Clock },
@@ -55,6 +56,7 @@ export function SparePartsRequestsList() {
   const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState("");
   const [showRequestDialog, setShowRequestDialog] = useState(false);
+  const [showOrderWizard, setShowOrderWizard] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
   const { data: requests, isLoading } = useQuery({
@@ -134,13 +136,23 @@ export function SparePartsRequestsList() {
                 </p>
               </div>
             </div>
-            <Button
-              onClick={() => setShowRequestDialog(true)}
-              className="bg-orange-500 hover:bg-orange-600 text-white"
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle demande
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowOrderWizard(true)}
+                variant="outline"
+                className="border-orange-500/50 text-orange-500 hover:bg-orange-500/10"
+              >
+                <ShoppingCart className="h-4 w-4 mr-2" />
+                Commander
+              </Button>
+              <Button
+                onClick={() => setShowRequestDialog(true)}
+                className="bg-orange-500 hover:bg-orange-600 text-white"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Nouvelle demande
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -370,6 +382,12 @@ export function SparePartsRequestsList() {
       <SparePartsRequestDialog
         open={showRequestDialog}
         onOpenChange={setShowRequestDialog}
+      />
+
+      <SparePartsOrderWizard
+        open={showOrderWizard}
+        onOpenChange={setShowOrderWizard}
+        onSuccess={() => queryClient.invalidateQueries({ queryKey: ["spare-parts-requests"] })}
       />
     </div>
   );
