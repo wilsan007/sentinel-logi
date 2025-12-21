@@ -20,6 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, 
@@ -30,11 +31,17 @@ import {
   Building2,
   Calendar,
   DollarSign,
-  Loader2
+  Loader2,
+  Send,
+  BarChart3,
+  Upload
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { QuoteRequestSheet } from "./QuoteRequestSheet";
+import { SupplierQuoteResponseDialog } from "./SupplierQuoteResponseDialog";
+import { QuoteComparisonPanel } from "./QuoteComparisonPanel";
 
 interface Quote {
   id: string;
@@ -71,6 +78,12 @@ export function QuotesManager({ orderId, readOnly = false, onQuoteSelected }: Qu
   const [loading, setLoading] = useState(true);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState("list");
+  const [quoteRequestOpen, setQuoteRequestOpen] = useState(false);
+  const [quoteResponseOpen, setQuoteResponseOpen] = useState(false);
+  const [orderItems, setOrderItems] = useState<any[]>([]);
+  const [orderNumber, setOrderNumber] = useState("");
+  const [currency, setCurrency] = useState("FDJ");
   const { toast } = useToast();
 
   const [newQuote, setNewQuote] = useState({
@@ -84,8 +97,29 @@ export function QuotesManager({ orderId, readOnly = false, onQuoteSelected }: Qu
   useEffect(() => {
     loadQuotes();
     loadSuppliers();
+    loadOrderDetails();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orderId]);
+
+  const loadOrderDetails = async () => {
+    const { data: order } = await supabase
+      .from("procurement_orders")
+      .select("order_number, currency")
+      .eq("id", orderId)
+      .single();
+    
+    if (order) {
+      setOrderNumber(order.order_number);
+      setCurrency(order.currency || "FDJ");
+    }
+
+    const { data: items } = await supabase
+      .from("procurement_order_items")
+      .select(`*, stock_items (type, sous_type, categorie)`)
+      .eq("order_id", orderId);
+    
+    setOrderItems(items || []);
+  };
 
   const loadQuotes = async () => {
     setLoading(true);
@@ -210,12 +244,36 @@ export function QuotesManager({ orderId, readOnly = false, onQuoteSelected }: Qu
           </p>
         </div>
         {!readOnly && (
-          <Button onClick={() => setAddDialogOpen(true)} size="sm" className="gap-2">
-            <Plus className="h-4 w-4" />
-            Ajouter un devis
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => setQuoteRequestOpen(true)} variant="outline" size="sm" className="gap-2">
+              <Send className="h-4 w-4" />
+              Demander devis
+            </Button>
+            <Button onClick={() => setQuoteResponseOpen(true)} variant="outline" size="sm" className="gap-2">
+              <Upload className="h-4 w-4" />
+              Saisir réponse
+            </Button>
+            <Button onClick={() => setAddDialogOpen(true)} size="sm" className="gap-2">
+              <Plus className="h-4 w-4" />
+              Ajout rapide
+            </Button>
+          </div>
         )}
       </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="glass border border-border/50">
+          <TabsTrigger value="list" className="gap-2 data-[state=active]:text-emerald-500">
+            <FileText className="h-4 w-4" />
+            Liste ({quotes.length})
+          </TabsTrigger>
+          <TabsTrigger value="compare" className="gap-2 data-[state=active]:text-emerald-500" disabled={quotes.length < 2}>
+            <BarChart3 className="h-4 w-4" />
+            Comparaison
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="list" className="mt-4">
 
       {quotes.length === 0 ? (
         <Card className="glass border-dashed border-2 border-border/50">
@@ -336,13 +394,45 @@ export function QuotesManager({ orderId, readOnly = false, onQuoteSelected }: Qu
         </div>
       )}
 
+        </TabsContent>
+
+        <TabsContent value="compare" className="mt-4">
+          <QuoteComparisonPanel 
+            orderId={orderId} 
+            onQuoteSelected={onQuoteSelected}
+            readOnly={readOnly}
+          />
+        </TabsContent>
+      </Tabs>
+
+      {/* Quote Request Sheet */}
+      <QuoteRequestSheet
+        open={quoteRequestOpen}
+        onOpenChange={setQuoteRequestOpen}
+        orderId={orderId}
+        orderNumber={orderNumber}
+        items={orderItems}
+        currency={currency}
+      />
+
+      {/* Supplier Quote Response Dialog */}
+      <SupplierQuoteResponseDialog
+        open={quoteResponseOpen}
+        onOpenChange={setQuoteResponseOpen}
+        orderId={orderId}
+        orderNumber={orderNumber}
+        items={orderItems}
+        currency={currency}
+        onQuoteAdded={loadQuotes}
+      />
+
       {/* Add Quote Dialog */}
       <Dialog open={addDialogOpen} onOpenChange={setAddDialogOpen}>
         <DialogContent className="glass border border-border/50">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-emerald-500" />
-              Ajouter un devis
+              Ajouter un devis rapidement
             </DialogTitle>
           </DialogHeader>
 
