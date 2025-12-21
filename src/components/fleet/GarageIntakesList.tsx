@@ -6,13 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Plus, Search, Car, Loader2, CheckCircle, Clock, AlertTriangle, Stethoscope, ClipboardCheck, FileText } from "lucide-react";
+import { Plus, Search, Car, Loader2, CheckCircle, Clock, AlertTriangle, Stethoscope, ClipboardCheck, FileText, LogOut, ClipboardList } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { GarageIntakeWizard } from "./GarageIntakeWizard";
 import { DiagnosticDialog } from "./DiagnosticDialog";
 import { DiagnosticValidationDialog } from "./DiagnosticValidationDialog";
 import { DiagnosticReportSheet } from "./DiagnosticReportSheet";
+import { IntakeReportSheet } from "./IntakeReportSheet";
+import { ExitReportSheet } from "./ExitReportSheet";
 
 const MOTIF_LABELS: Record<string, { label: string; color: string }> = {
   REVISION: { label: "Révision", color: "bg-blue-500/20 text-blue-500" },
@@ -49,6 +51,9 @@ export function GarageIntakesList() {
   const [selectedDiagnostic, setSelectedDiagnostic] = useState<any>(null);
   const [showReportSheet, setShowReportSheet] = useState(false);
   const [selectedDiagnosticId, setSelectedDiagnosticId] = useState<string>("");
+  const [showIntakeSheet, setShowIntakeSheet] = useState(false);
+  const [showExitSheet, setShowExitSheet] = useState(false);
+  const [selectedIntakeId, setSelectedIntakeId] = useState<string>("");
   const { data: intakes, isLoading } = useQuery({
     queryKey: ["garage-intakes"],
     queryFn: async () => {
@@ -151,12 +156,32 @@ export function GarageIntakesList() {
                     <Button
                       variant="outline"
                       size="sm"
+                      onClick={() => { setSelectedIntakeId(intake.id); setShowIntakeSheet(true); }}
+                      className="gap-1 flex-1"
+                    >
+                      <ClipboardList className="h-3 w-3" />
+                      Réception
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
                       onClick={() => { setSelectedIntake(intake); setShowDiagnostic(true); }}
                       className="gap-1 flex-1"
                     >
                       <Stethoscope className="h-3 w-3" />
                       Diagnostic
                     </Button>
+                    {intake.statut !== "TERMINE" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setSelectedIntakeId(intake.id); setShowExitSheet(true); }}
+                        className="gap-1 border-green-500 text-green-500 flex-1"
+                      >
+                        <LogOut className="h-3 w-3" />
+                        Sortie
+                      </Button>
+                    )}
                     {diagnostics?.find((d: any) => d.intake_id === intake.id) && (
                       <>
                         <Button
@@ -170,7 +195,7 @@ export function GarageIntakesList() {
                           className="gap-1 border-amber-500 text-amber-500 flex-1"
                         >
                           <FileText className="h-3 w-3" />
-                          Fiche
+                          Fiche Diag
                         </Button>
                         {diagnostics?.find((d: any) => d.intake_id === intake.id && d.validation_status === "EN_ATTENTE_VALIDATION") && (
                           <Button
@@ -254,12 +279,32 @@ export function GarageIntakesList() {
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => { setSelectedIntakeId(intake.id); setShowIntakeSheet(true); }}
+                            className="gap-1"
+                            title="Fiche de réception"
+                          >
+                            <ClipboardList className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => { setSelectedIntake(intake); setShowDiagnostic(true); }}
                             className="gap-1"
+                            title="Diagnostic"
                           >
                             <Stethoscope className="h-3 w-3" />
-                            <span className="hidden xl:inline">Diagnostic</span>
                           </Button>
+                          {intake.statut !== "TERMINE" && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => { setSelectedIntakeId(intake.id); setShowExitSheet(true); }}
+                              className="gap-1 border-green-500 text-green-500"
+                              title="Fiche de sortie"
+                            >
+                              <LogOut className="h-3 w-3" />
+                            </Button>
+                          )}
                           {diagnostics?.find((d: any) => d.intake_id === intake.id) && (
                             <>
                               <Button
@@ -271,9 +316,9 @@ export function GarageIntakesList() {
                                   setShowReportSheet(true);
                                 }}
                                 className="gap-1 border-amber-500 text-amber-500"
+                                title="Fiche diagnostic"
                               >
                                 <FileText className="h-3 w-3" />
-                                <span className="hidden xl:inline">Fiche</span>
                               </Button>
                               {diagnostics?.find((d: any) => d.intake_id === intake.id && d.validation_status === "EN_ATTENTE_VALIDATION") && (
                                 <Button
@@ -285,9 +330,9 @@ export function GarageIntakesList() {
                                     setShowValidation(true);
                                   }}
                                   className="gap-1 border-green-500 text-green-500"
+                                  title="Valider diagnostic"
                                 >
                                   <ClipboardCheck className="h-3 w-3" />
-                                  <span className="hidden xl:inline">Valider</span>
                                 </Button>
                               )}
                             </>
@@ -330,6 +375,18 @@ export function GarageIntakesList() {
         open={showReportSheet}
         onOpenChange={setShowReportSheet}
         diagnosticId={selectedDiagnosticId}
+      />
+
+      <IntakeReportSheet
+        open={showIntakeSheet}
+        onOpenChange={setShowIntakeSheet}
+        intakeId={selectedIntakeId}
+      />
+
+      <ExitReportSheet
+        open={showExitSheet}
+        onOpenChange={setShowExitSheet}
+        intakeId={selectedIntakeId}
       />
     </Card>
   );
