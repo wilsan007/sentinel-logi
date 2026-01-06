@@ -10,46 +10,124 @@ import { toast } from 'sonner';
 import { motion } from 'framer-motion';
 
 const TABLES = [
-  { name: 'locations', label: 'Locations (Camps)', description: 'Tous les camps et entrepôts' },
-  { name: 'personnel', label: 'Personnel', description: 'Liste du personnel militaire' },
-  { name: 'stock_items', label: 'Articles Stock', description: 'Catalogue des articles (Habillement & Alimentaire)' },
-  { name: 'item_variants', label: 'Variantes Articles', description: 'Variantes par taille, couleur, genre' },
-  { name: 'inventory_batches', label: 'Lots Inventaire', description: 'Lots alimentaires avec dates expiration' },
-  { name: 'allocations', label: 'Allocations', description: 'Dotations et prêts au personnel' },
-  { name: 'suppliers', label: 'Fournisseurs', description: 'Liste des fournisseurs' },
-  { name: 'procurement_orders', label: 'Commandes', description: 'Commandes d\'approvisionnement' },
-  { name: 'procurement_order_items', label: 'Articles Commandes', description: 'Détails des articles commandés' },
-  { name: 'procurement_quotes', label: 'Devis', description: 'Devis fournisseurs' },
-  { name: 'procurement_stage_history', label: 'Historique Étapes', description: 'Historique des changements d\'étape' },
-  { name: 'requests', label: 'Demandes', description: 'Demandes des camps' },
-  { name: 'profiles', label: 'Profils Utilisateurs', description: 'Comptes utilisateurs' },
-  { name: 'user_roles', label: 'Rôles Utilisateurs', description: 'Attribution des rôles' },
-  { name: 'djibouti_holidays', label: 'Jours Fériés', description: 'Calendrier des jours fériés Djibouti' },
-  { name: 'exceptional_access_requests', label: 'Demandes Accès Urgence', description: 'Demandes d\'accès exceptionnel' },
-  { name: 'exceptional_submission_access', label: 'Accès Exceptionnels', description: 'Accès urgence accordés' },
-  { name: 'suspicious_activities', label: 'Activités Suspectes', description: 'Alertes de sécurité' },
+  // === Général ===
+  { name: 'locations', label: 'Locations (Camps)', description: 'Tous les camps et entrepôts', category: 'general' },
+  { name: 'personnel', label: 'Personnel', description: 'Liste du personnel militaire', category: 'general' },
+  { name: 'profiles', label: 'Profils Utilisateurs', description: 'Comptes utilisateurs', category: 'general' },
+  { name: 'user_roles', label: 'Rôles Utilisateurs', description: 'Attribution des rôles', category: 'general' },
+  { name: 'djibouti_holidays', label: 'Jours Fériés', description: 'Calendrier des jours fériés Djibouti', category: 'general' },
+  
+  // === Stock & Inventaire ===
+  { name: 'stock_items', label: 'Articles Stock', description: 'Catalogue des articles (Habillement & Alimentaire)', category: 'stock' },
+  { name: 'item_variants', label: 'Variantes Articles', description: 'Variantes par taille, couleur, genre', category: 'stock' },
+  { name: 'inventory_batches', label: 'Lots Inventaire', description: 'Lots alimentaires avec dates expiration', category: 'stock' },
+  { name: 'allocations', label: 'Allocations', description: 'Dotations et prêts au personnel', category: 'stock' },
+  { name: 'requests', label: 'Demandes', description: 'Demandes des camps', category: 'stock' },
+  
+  // === Approvisionnement ===
+  { name: 'suppliers', label: 'Fournisseurs', description: 'Liste des fournisseurs', category: 'procurement' },
+  { name: 'procurement_orders', label: 'Commandes', description: 'Commandes d\'approvisionnement', category: 'procurement' },
+  { name: 'procurement_order_items', label: 'Articles Commandes', description: 'Détails des articles commandés', category: 'procurement' },
+  { name: 'procurement_quotes', label: 'Devis', description: 'Devis fournisseurs', category: 'procurement' },
+  { name: 'procurement_stage_history', label: 'Historique Étapes', description: 'Historique des changements d\'étape', category: 'procurement' },
+  
+  // === Parc Automobile - Véhicules ===
+  { name: 'vehicles', label: 'Véhicules', description: 'Liste des véhicules du parc', category: 'fleet' },
+  { name: 'vehicle_authorized_drivers', label: 'Conducteurs Autorisés', description: 'Affectation conducteurs aux véhicules', category: 'fleet' },
+  { name: 'vehicle_documents', label: 'Documents Véhicules', description: 'Assurances, cartes grises, contrôles techniques', category: 'fleet' },
+  
+  // === Parc Automobile - Entretiens & Réparations ===
+  { name: 'vehicle_maintenances', label: 'Entretiens Réalisés', description: 'Historique des entretiens effectués', category: 'fleet' },
+  { name: 'maintenance_schedules', label: 'Planification Entretiens', description: 'Entretiens programmés à venir', category: 'fleet' },
+  { name: 'vehicle_repairs', label: 'Réparations', description: 'Réparations légères et lourdes', category: 'fleet' },
+  
+  // === Parc Automobile - Garage ===
+  { name: 'vehicle_garage_intakes', label: 'Entrées Garage', description: 'Réception des véhicules au garage', category: 'fleet' },
+  { name: 'vehicle_exits', label: 'Sorties Garage', description: 'Libération des véhicules après travaux', category: 'fleet' },
+  { name: 'vehicle_diagnostics', label: 'Diagnostics', description: 'Diagnostics mécaniques des véhicules', category: 'fleet' },
+  { name: 'vehicle_diagnostic_items', label: 'Éléments Diagnostics', description: 'Détails des points de diagnostic', category: 'fleet' },
+  { name: 'diagnostic_categories', label: 'Catégories Diagnostics', description: 'Types de contrôles diagnostiques', category: 'fleet' },
+  { name: 'diagnostic_options', label: 'Options Diagnostics', description: 'Points de contrôle par catégorie', category: 'fleet' },
+  
+  // === Parc Automobile - État des véhicules ===
+  { name: 'vehicle_body_damages', label: 'Dommages Carrosserie', description: 'Relevé des dégâts sur la carrosserie', category: 'fleet' },
+  { name: 'vehicle_inspection_items', label: 'Éléments Inspection', description: 'Points d\'inspection véhicule', category: 'fleet' },
+  { name: 'vehicle_incidents', label: 'Incidents', description: 'Accidents et sinistres déclarés', category: 'fleet' },
+  
+  // === Parc Automobile - Carburant ===
+  { name: 'vehicle_fuel_logs', label: 'Consommation Carburant', description: 'Historique des pleins de carburant', category: 'fleet' },
+  
+  // === Parc Automobile - Pièces détachées ===
+  { name: 'spare_parts', label: 'Pièces Détachées', description: 'Stock de pièces pour réparations', category: 'fleet' },
+  { name: 'spare_parts_requests', label: 'Demandes Pièces', description: 'Demandes de pièces détachées', category: 'fleet' },
+  { name: 'vehicle_repair_parts', label: 'Pièces Réparations', description: 'Pièces utilisées dans les réparations', category: 'fleet' },
+  
+  // === Sécurité ===
+  { name: 'exceptional_access_requests', label: 'Demandes Accès Urgence', description: 'Demandes d\'accès exceptionnel', category: 'security' },
+  { name: 'exceptional_submission_access', label: 'Accès Exceptionnels', description: 'Accès urgence accordés', category: 'security' },
+  { name: 'suspicious_activities', label: 'Activités Suspectes', description: 'Alertes de sécurité', category: 'security' },
+  { name: 'security_audit_log', label: 'Journal Audit', description: 'Logs des actions utilisateurs', category: 'security' },
 ];
 
 // Définition des requêtes avec relations pour l'export JSON
 const RELATIONS_QUERIES: Record<string, string> = {
+  // Général
   locations: '*',
   personnel: '*, location:locations(nom, code)',
+  profiles: '*',
+  user_roles: '*, location:locations(nom, code)',
+  djibouti_holidays: '*',
+  
+  // Stock
   stock_items: '*',
   item_variants: '*, stock_item:stock_items(type, sous_type, categorie), location:locations(nom, code)',
   inventory_batches: '*, item_variant:item_variants(taille, couleur, genre, stock_item:stock_items(type, sous_type)), location:locations(nom, code), supplier:suppliers(name, code)',
   allocations: '*, personnel:personnel(nom, prenom, matricule, grade), item_variant:item_variants(taille, couleur, genre, stock_item:stock_items(type, sous_type))',
+  requests: '*, stock_item:stock_items(type, sous_type, categorie), location:locations(nom, code)',
+  
+  // Approvisionnement
   suppliers: '*',
   procurement_orders: '*, supplier:suppliers(name, code, country), location:locations(nom, code), items:procurement_order_items(quantity_ordered, unit_price, stock_item:stock_items(type, sous_type))',
   procurement_order_items: '*, order:procurement_orders(order_number, stage), stock_item:stock_items(type, sous_type, categorie)',
   procurement_quotes: '*, order:procurement_orders(order_number), supplier:suppliers(name, code)',
   procurement_stage_history: '*, order:procurement_orders(order_number)',
-  requests: '*, stock_item:stock_items(type, sous_type, categorie), location:locations(nom, code)',
-  profiles: '*',
-  user_roles: '*, location:locations(nom, code)',
-  djibouti_holidays: '*',
+  
+  // Parc Automobile - Véhicules
+  vehicles: '*, location:locations(nom, code), conducteur_principal:personnel(nom, prenom, matricule)',
+  vehicle_authorized_drivers: '*, vehicle:vehicles(immatriculation, marque, modele), personnel:personnel(nom, prenom, matricule)',
+  vehicle_documents: '*, vehicle:vehicles(immatriculation, marque, modele)',
+  
+  // Parc Automobile - Entretiens & Réparations
+  vehicle_maintenances: '*, vehicle:vehicles(immatriculation, marque, modele), effectue_par:personnel(nom, prenom)',
+  maintenance_schedules: '*, vehicle:vehicles(immatriculation, marque, modele)',
+  vehicle_repairs: '*, vehicle:vehicles(immatriculation, marque, modele), diagnostic:vehicle_diagnostics(diagnostic_resume, statut)',
+  
+  // Parc Automobile - Garage
+  vehicle_garage_intakes: '*, vehicle:vehicles(immatriculation, marque, modele), conducteur:personnel(nom, prenom, matricule)',
+  vehicle_exits: '*, vehicle:vehicles(immatriculation, marque, modele), conducteur:personnel(nom, prenom), intake:vehicle_garage_intakes(motif, date_arrivee)',
+  vehicle_diagnostics: '*, intake:vehicle_garage_intakes(motif, vehicle:vehicles(immatriculation, marque, modele)), mecanicien:personnel(nom, prenom)',
+  vehicle_diagnostic_items: '*, diagnostic:vehicle_diagnostics(statut, diagnostic_resume), option:diagnostic_options(nom, category:diagnostic_categories(nom))',
+  diagnostic_categories: '*',
+  diagnostic_options: '*, category:diagnostic_categories(nom)',
+  
+  // Parc Automobile - État des véhicules
+  vehicle_body_damages: '*, vehicle:vehicles(immatriculation, marque, modele), intake:vehicle_garage_intakes(motif, date_arrivee)',
+  vehicle_inspection_items: '*, vehicle:vehicles(immatriculation, marque, modele), intake:vehicle_garage_intakes(motif)',
+  vehicle_incidents: '*, vehicle:vehicles(immatriculation, marque, modele), conducteur_responsable:personnel(nom, prenom, matricule)',
+  
+  // Parc Automobile - Carburant
+  vehicle_fuel_logs: '*, vehicle:vehicles(immatriculation, marque, modele), conducteur:personnel(nom, prenom, matricule), location:locations(nom, code)',
+  
+  // Parc Automobile - Pièces détachées
+  spare_parts: '*, recovered_from_vehicle:vehicles(immatriculation, marque, modele)',
+  spare_parts_requests: '*, vehicle:vehicles(immatriculation, marque, modele), spare_part:spare_parts(nom, reference), diagnostic:vehicle_diagnostics(diagnostic_resume)',
+  vehicle_repair_parts: '*, repair:vehicle_repairs(description, vehicle:vehicles(immatriculation)), spare_part:spare_parts(nom, reference)',
+  
+  // Sécurité
   exceptional_access_requests: '*, location:locations(nom, code)',
   exceptional_submission_access: '*, location:locations(nom, code)',
   suspicious_activities: '*',
+  security_audit_log: '*',
 };
 
 const Export = () => {
