@@ -1,73 +1,119 @@
-# Welcome to your Lovable project
+# Logistique Militaire — SaaS de gestion intégrée
 
-## Project info
+Application SaaS de gestion logistique pour camps militaires : habillement, alimentation, parc automobile, approvisionnement, personnel, prêts et demandes inter-camps.
 
-**URL**: https://lovable.dev/projects/848fc9d7-6bb4-4192-86ff-df4cceec012f
+> Stack : React 18 · TypeScript 5 · Vite 5 · Tailwind CSS · shadcn/ui · TanStack Query · Lovable Cloud (Supabase) · react-i18next · Sentry
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## 🚀 Démarrage rapide
 
-**Use Lovable**
+```bash
+# 1. Installer les dépendances
+npm install      # ou bun install
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/848fc9d7-6bb4-4192-86ff-df4cceec012f) and start prompting.
+# 2. Configurer l'environnement
+cp .env.example .env
+# Remplir les variables (auto-renseignées en projet Lovable)
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# 3. Lancer le serveur de dev
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+L'application est ensuite disponible sur `http://localhost:8080`.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+---
 
-**Use GitHub Codespaces**
+## 📁 Architecture
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+```
+src/
+├── components/        # Composants React par domaine métier
+│   ├── fleet/         # Parc automobile
+│   ├── procurement/   # Approvisionnement
+│   ├── gear/          # Habillement
+│   ├── food/          # Alimentation
+│   ├── personnel/     # Gestion du personnel
+│   ├── loans/         # Prêts d'équipement
+│   ├── demandes/      # Demandes des camps
+│   └── ui/            # shadcn/ui (design system)
+├── pages/             # Routes React Router
+├── hooks/             # Hooks React partagés
+├── lib/               # Utilitaires, i18n, monitoring
+├── integrations/
+│   └── supabase/      # Client + types générés (read-only)
+└── test/              # Setup Vitest + tests partagés
 
-## What technologies are used for this project?
+supabase/
+├── functions/         # Edge Functions
+└── migrations/        # Migrations SQL (read-only, gérées par Lovable)
+```
 
-This project is built with:
+---
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+## 🧪 Tests
 
-## How can I deploy this project?
+```bash
+npm run test           # Lance Vitest en mode watch
+npm run test:run       # Exécution unique (CI)
+npm run test:coverage  # Avec couverture
+```
 
-Simply open [Lovable](https://lovable.dev/projects/848fc9d7-6bb4-4192-86ff-df4cceec012f) and click on Share -> Publish.
+Les tests unitaires utilisent **Vitest** + **@testing-library/react**.
 
-## Can I connect a custom domain to my Lovable project?
+---
 
-Yes, you can!
+## 🔧 Scripts utiles
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+| Commande              | Description                                  |
+|-----------------------|----------------------------------------------|
+| `npm run dev`         | Serveur de développement                     |
+| `npm run build`       | Build production                             |
+| `npm run build:dev`   | Build mode développement                     |
+| `npm run lint`        | Lint ESLint                                  |
+| `npm run test`        | Tests Vitest                                 |
+| `npm run analyze`     | Analyse du bundle (rollup-plugin-visualizer) |
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+---
+
+## 🔐 Sécurité
+
+- **RLS systématique** : toutes les tables Supabase ont des politiques RLS activées.
+- **Roles applicatifs** : table `user_roles` séparée + fonction `has_role()` SECURITY DEFINER.
+- **Rotation des clés** : la clé `anon` peut être régénérée via la console Lovable Cloud à tout moment.
+- **Audit trail** : table `security_audit_log` + détection d'activités suspectes (triggers).
+- **Aucun secret côté client** : seules les clés publiques (`anon`) sont exposées.
+
+⚠️ **Ne jamais committer un vrai `.env`.** Utiliser `.env.example` comme référence.
+
+---
+
+## 🌍 Internationalisation
+
+Le projet utilise `react-i18next`. Langue par défaut : **français**.
+Pour ajouter une langue, créer `src/lib/i18n/locales/<code>.json` puis l'enregistrer dans `src/lib/i18n/index.ts`.
+
+---
+
+## 📊 Observabilité
+
+Sentry est initialisé automatiquement si `VITE_SENTRY_DSN` est défini. Sinon, le monitoring est désactivé en silence (pratique pour le local).
+
+Un `ErrorBoundary` global capture les erreurs React non interceptées et affiche une page de fallback.
+
+---
+
+## 🚢 Déploiement
+
+Le déploiement est géré par Lovable :
+
+- **Frontend** : cliquer sur **Publish** dans l'éditeur Lovable.
+- **Backend** (Edge Functions, migrations) : déployé automatiquement à chaque modification.
+
+Un workflow GitHub Actions (`.github/workflows/ci.yml`) exécute lint + build + tests sur chaque PR.
+
+---
+
+## 📜 Licence
+
+Propriétaire — usage interne.

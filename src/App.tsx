@@ -15,7 +15,25 @@ import Export from "./pages/Export";
 import Fleet from "./pages/Fleet";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+/**
+ * Configuration TanStack Query optimisée pour un SaaS.
+ * - staleTime 60s : évite le refetch agressif au refocus.
+ * - gcTime 5 min : garde en cache après démontage.
+ * - retry 1 : un seul retry automatique pour limiter le bruit réseau.
+ */
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 60_000,
+      gcTime: 5 * 60_000,
+      retry: 1,
+      refetchOnWindowFocus: false,
+    },
+    mutations: {
+      retry: 0,
+    },
+  },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>

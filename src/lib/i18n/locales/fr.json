@@ -1,0 +1,36 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "create": "Créer",
+    "search": "Rechercher",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "confirm": "Confirmer",
+    "close": "Fermer",
+    "yes": "Oui",
+    "no": "Non",
+    "error": "Erreur",
+    "success": "Succès"
+  },
+  "modules": {
+    "habillement": "Habillement",
+    "alimentation": "Alimentation",
+    "personnel": "Personnel",
+    "fleet": "Parc Auto",
+    "procurement": "Approvisionnement",
+    "demandes": "Demandes",
+    "loans": "Prêts",
+    "export": "Export"
+  },
+  "errors": {
+    "generic": "Une erreur est survenue",
+    "network": "Problème de connexion réseau",
+    "unauthorized": "Vous n'êtes pas autorisé à effectuer cette action",
+    "notFound": "Ressource introuvable"
+  }
+}

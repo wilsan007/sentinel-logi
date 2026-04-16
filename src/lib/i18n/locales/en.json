@@ -1,0 +1,36 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "confirm": "Confirm",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No",
+    "error": "Error",
+    "success": "Success"
+  },
+  "modules": {
+    "habillement": "Clothing",
+    "alimentation": "Food Supplies",
+    "personnel": "Personnel",
+    "fleet": "Fleet",
+    "procurement": "Procurement",
+    "demandes": "Requests",
+    "loans": "Loans",
+    "export": "Export"
+  },
+  "errors": {
+    "generic": "An error occurred",
+    "network": "Network connection issue",
+    "unauthorized": "You are not authorized to perform this action",
+    "notFound": "Resource not found"
+  }
+}
