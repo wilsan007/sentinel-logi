@@ -2,7 +2,6 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
-import { visualizer } from "rollup-plugin-visualizer";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
@@ -13,14 +12,6 @@ export default defineConfig(({ mode }) => ({
   plugins: [
     react(),
     mode === "development" && componentTagger(),
-    // Analyse du bundle uniquement avec ANALYZE=true (npm run analyze)
-    process.env.ANALYZE === "true" &&
-      visualizer({
-        filename: "dist/bundle-stats.html",
-        open: false,
-        gzipSize: true,
-        brotliSize: true,
-      }),
   ].filter(Boolean),
   resolve: {
     alias: {
@@ -28,8 +19,6 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Code-splitting manuel — on garde React/React-DOM dans le chunk principal
-    // pour éviter les doublons d'instance qui cassent les hooks.
     rollupOptions: {
       output: {
         manualChunks: {
