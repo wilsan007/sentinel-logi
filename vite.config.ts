@@ -28,11 +28,11 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Code-splitting manuel pour réduire le bundle initial.
+    // Code-splitting manuel — on garde React/React-DOM dans le chunk principal
+    // pour éviter les doublons d'instance qui cassent les hooks.
     rollupOptions: {
       output: {
         manualChunks: {
-          react: ["react", "react-dom", "react-router-dom"],
           query: ["@tanstack/react-query"],
           supabase: ["@supabase/supabase-js"],
           charts: ["recharts"],
